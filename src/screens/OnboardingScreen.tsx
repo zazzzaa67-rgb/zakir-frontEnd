@@ -38,7 +38,7 @@ export default function OnboardingScreen({ navigate }: NavProps) {
       {/* Skip */}
       <div className="flex justify-start px-6 pt-12 pb-0">
         <button
-          onClick={() => navigate('setup')}
+          onClick={() => navigate('auth')}
           className="text-sm font-semibold text-slate-400 px-3 py-1.5 rounded-xl active:bg-slate-100 transition-colors"
         >
           تخطي
@@ -121,7 +121,7 @@ export default function OnboardingScreen({ navigate }: NavProps) {
       <div className="px-6 pb-10 flex flex-col gap-3">
         {isLast ? (
           <button
-            onClick={() => navigate('setup')}
+            onClick={() => navigate('auth')}
             className="w-full py-4 rounded-2xl text-white font-bold text-lg active:scale-95 transition-transform"
             style={{
               background: `linear-gradient(135deg, ${slide.accent}, #7C3AED)`,

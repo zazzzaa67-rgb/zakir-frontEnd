@@ -9,6 +9,7 @@ import AILessonScreen from './screens/AILessonScreen';
 import VideoPlayerScreen from './screens/VideoPlayerScreen';
 import LessonSummaryScreen from './screens/LessonSummaryScreen';
 import QuizScreen from './screens/QuizScreen';
+import HomeworkScreen from './screens/HomeworkScreen';
 import MistakesScreen from './screens/MistakesScreen';
 import GamificationScreen from './screens/GamificationScreen';
 import CoinsScreen from './screens/CoinsScreen';
@@ -17,11 +18,13 @@ import ProScreen from './screens/ProScreen';
 import ProDashboardScreen from './screens/ProDashboardScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
+import AuthScreen from './screens/AuthScreen';
+import TeamScreen from './screens/TeamScreen';
 
 export type AppScreen =
-  | 'splash' | 'onboarding' | 'setup'
+  | 'splash' | 'onboarding' | 'auth' | 'setup' | 'teams'
   | 'home' | 'subjects' | 'lesson_list'
-  | 'ai_lesson' | 'video' | 'summary' | 'quiz'
+  | 'ai_lesson' | 'video' | 'summary' | 'quiz' | 'homework'
   | 'mistakes' | 'gamification' | 'coins'
   | 'planner' | 'pro' | 'pro_dashboard'
   | 'profile' | 'notifications';
@@ -46,7 +49,9 @@ export default function App() {
     switch (screen) {
       case 'splash': return <SplashScreen {...props} />;
       case 'onboarding': return <OnboardingScreen {...props} />;
+      case 'auth': return <AuthScreen {...props} />;
       case 'setup': return <ProfileSetupScreen {...props} />;
+      case 'teams': return <TeamScreen {...props} />;
       case 'home': return <HomeScreen {...props} />;
       case 'subjects': return <SubjectsScreen {...props} />;
       case 'lesson_list': return <LessonListScreen {...props} />;
@@ -54,6 +59,7 @@ export default function App() {
       case 'video': return <VideoPlayerScreen {...props} />;
       case 'summary': return <LessonSummaryScreen {...props} />;
       case 'quiz': return <QuizScreen {...props} />;
+      case 'homework': return <HomeworkScreen {...props} />;
       case 'mistakes': return <MistakesScreen {...props} />;
       case 'gamification': return <GamificationScreen {...props} />;
       case 'coins': return <CoinsScreen {...props} />;

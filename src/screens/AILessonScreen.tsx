@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavProps } from '../App';
 import BottomNav from '../components/BottomNav';
+import { getLessonById, LessonDetails } from '../lib/api';
 
 const modes = [
-  { icon: '🎥', label: 'فيديو الشرح', screen: 'video' as const },
-  { icon: '📊', label: 'PowerPoint', screen: 'video' as const },
-  { icon: '✏️', label: 'رسومات', screen: 'summary' as const },
-  { icon: '📝', label: 'ملخص الدرس', screen: 'summary' as const },
+  { icon: '📝', label: 'الواجب', screen: 'homework' as const },
+  { icon: '🧠', label: 'الامتحان', screen: 'quiz' as const },
+  { icon: '🎥', label: 'فيديو الشرح الذكي', screen: 'video' as const },
 ];
 
 const aiMessages = [
@@ -17,9 +17,29 @@ const aiMessages = [
 
 export default function AILessonScreen({ navigate, params }: NavProps) {
   const lesson = (params?.lesson as string) || 'المعادلات الخطية';
+  const lessonId = params?.lessonId as string | undefined;
+  const [lessonDetails, setLessonDetails] = useState<LessonDetails | null>(null);
+  const [videoComingSoon, setVideoComingSoon] = useState(false);
   const [activeMsg, setActiveMsg] = useState(1);
   const [userInput, setUserInput] = useState('');
   const [messages, setMessages] = useState(aiMessages);
+
+  useEffect(() => {
+    if (!lessonId) return;
+    getLessonById(lessonId).then(setLessonDetails).catch(() => undefined);
+  }, [lessonId]);
+
+  const openMode = (mode: typeof modes[number]) => {
+    if (mode.screen === 'video') {
+      setVideoComingSoon(true);
+      return;
+    }
+    navigate(mode.screen, {
+      lessonId,
+      lesson,
+      questions: mode.screen === 'homework' ? lessonDetails?.content_json.homework : lessonDetails?.content_json.exam,
+    });
+  };
 
   const handleSend = () => {
     if (!userInput.trim()) return;
@@ -40,7 +60,7 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
             {modes.map((m) => (
               <button
                 key={m.label}
-                onClick={() => navigate(m.screen)}
+                onClick={() => openMode(m)}
                 className="text-base px-2 py-1.5 rounded-xl bg-white/10 text-white active:bg-white/20"
                 title={m.label}
               >
@@ -87,11 +107,11 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
         </div>
 
         {/* Mode cards */}
-        <div className="grid grid-cols-4 gap-2 mb-4">
+        <div className="grid grid-cols-3 gap-2 mb-4">
           {modes.map((m) => (
             <button
               key={m.label}
-              onClick={() => navigate(m.screen)}
+              onClick={() => openMode(m)}
               className="bg-white rounded-2xl p-3 flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
               style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
             >
@@ -100,6 +120,13 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
             </button>
           ))}
         </div>
+        {videoComingSoon && (
+          <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-right">
+            <div className="mb-1 font-black text-blue-900">فيديو الشرح الذكي قيد التجهيز 🎥</div>
+            <p className="text-sm font-medium leading-6 text-blue-700">نعمل عليه حاليا وسيتم إطلاقه قريبا لضمان أفضل أداء وتجربة شرح.</p>
+            <button onClick={() => setVideoComingSoon(false)} className="mt-2 text-xs font-black text-blue-600">حسنا</button>
+          </div>
+        )}
       </div>
 
       {/* Chat area */}

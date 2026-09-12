@@ -1,186 +1,76 @@
 import { useState } from 'react';
 import { NavProps } from '../App';
+import { signUp } from '../lib/api';
 
-const stages = ['ابتدائي', 'إعدادي', 'ثانوي'];
+const tracks = {
+  1: [{ id: 'general_1st', label: 'عام' }],
+  2: [
+    { id: 'medicine_2nd', label: 'الطب وعلوم الحياة' },
+    { id: 'engineering_2nd', label: 'الهندسة وعلوم الحاسب' },
+    { id: 'business_2nd', label: 'الأعمال' },
+    { id: 'arts_2nd', label: 'الآداب والفنون' },
+  ],
+  3: [
+    { id: 'scientific_science_3rd', label: 'علمي علوم' },
+    { id: 'scientific_math_3rd', label: 'علمي رياضة' },
+    { id: 'literary_3rd', label: 'أدبي' },
+    { id: 'business_3rd', label: 'الأعمال - بكالوريا' },
+    { id: 'arts_3rd', label: 'الآداب والفنون - بكالوريا' },
+  ],
+} as const;
 
-const gradesByStage: Record<string, string[]> = {
-  'ابتدائي': ['رابعة ابتدائي', 'خامسة ابتدائي', 'سادسة ابتدائي'],
-  'إعدادي': ['أولى إعدادي', 'ثانية إعدادي', 'ثالثة إعدادي'],
-  'ثانوي': ['أولى ثانوي', 'ثانية ثانوي', 'ثالثة ثانوي'],
-};
+export default function ProfileSetupScreen({ navigate, params }: NavProps) {
+  const [displayName, setDisplayName] = useState('');
+  const [gender, setGender] = useState<'boy' | 'girl' | ''>('');
+  const [grade, setGrade] = useState<1 | 2 | 3 | 0>(0);
+  const [trackId, setTrackId] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const credentials = params ?? {};
 
-const subjects = [
-  { icon: '📐', name: 'الرياضيات' },
-  { icon: '🔬', name: 'العلوم' },
-  { icon: '📖', name: 'اللغة العربية' },
-  { icon: '🇬🇧', name: 'اللغة الإنجليزية' },
-  { icon: '🌍', name: 'الدراسات الاجتماعية' },
-  { icon: '⚛️', name: 'الفيزياء' },
-  { icon: '🧪', name: 'الكيمياء' },
-  { icon: '🧬', name: 'الأحياء' },
-];
-
-export default function ProfileSetupScreen({ navigate }: NavProps) {
-  const [step, setStep] = useState(0);
-  const [selectedStage, setSelectedStage] = useState('');
-  const [selectedGrade, setSelectedGrade] = useState('');
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-
-  const toggleSubject = (name: string) => {
-    setSelectedSubjects((prev) =>
-      prev.includes(name) ? prev.filter((s) => s !== name) : [...prev, name]
-    );
-  };
-
-  const canProceed = () => {
-    if (step === 0) return selectedStage !== '';
-    if (step === 1) return selectedGrade !== '';
-    return selectedSubjects.length > 0;
-  };
-
-  const stepLabels = ['المرحلة', 'الصف', 'المواد'];
+  async function finish() {
+    setError(''); setLoading(true);
+    try {
+      await signUp({ email: String(credentials.email), password: String(credentials.password), displayName, gender, gradeLevel: grade, trackId });
+      navigate('home');
+    } catch (err) { setError(err instanceof Error ? err.message : 'تعذر إنشاء الحساب'); }
+    finally { setLoading(false); }
+  }
+  const canProceed = Boolean(displayName.trim() && gender && grade && trackId);
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F8F9FF]">
       {/* Header */}
       <div className="px-6 pt-12 pb-6">
-        <div className="flex gap-2 mb-6">
-          {stepLabels.map((label, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
-              <div
-                className="w-full h-1.5 rounded-full transition-colors"
-                style={{ background: i <= step ? '#1E6FF0' : '#E2E8F0' }}
-              />
-              <span
-                className="text-xs font-semibold"
-                style={{ color: i <= step ? '#1E6FF0' : '#94A3B8' }}
-              >
-                {label}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <h1 className="text-2xl font-black text-slate-900 mb-1">
-          {step === 0 && 'اختار مرحلتك الدراسية'}
-          {step === 1 && 'اختار صفك الدراسي'}
-          {step === 2 && 'اختار مواد مفضلة'}
-        </h1>
-        <p className="text-slate-500 text-sm font-medium">
-          {step === 0 && 'هنخصصلك المحتوى المناسب'}
-          {step === 1 && 'عشان نجيبلك الدروس الصح'}
-          {step === 2 && 'ممكن تختار أكتر من مادة'}
-        </p>
+        <div className="mb-5 flex items-center justify-between"><span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-600">ثانوي عام</span><span className="text-xs font-bold text-slate-400">بياناتك التعليمية</span></div>
+        <h1 className="mb-1 text-2xl font-black text-slate-900">خلّي ذاكر معي يعرفك</h1>
+        <p className="text-sm font-medium text-slate-500">اختياراتك هتحدد المواد والكتب اللي هتظهر لك.</p>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-6 pb-4">
-        {step === 0 && (
-          <div className="flex flex-col gap-3">
-            {stages.map((stage) => (
-              <button
-                key={stage}
-                onClick={() => setSelectedStage(stage)}
-                className="w-full py-5 px-6 rounded-2xl text-right font-bold text-lg transition-all active:scale-95 flex items-center justify-between"
-                style={{
-                  background: selectedStage === stage
-                    ? 'linear-gradient(135deg, #EFF6FF, #DBEAFE)'
-                    : 'white',
-                  border: `2px solid ${selectedStage === stage ? '#1E6FF0' : '#F1F5F9'}`,
-                  color: selectedStage === stage ? '#1E6FF0' : '#0F172A',
-                  boxShadow: selectedStage === stage
-                    ? '0 4px 16px rgba(30,111,240,0.15)'
-                    : '0 2px 8px rgba(0,0,0,0.04)',
-                }}
-              >
-                <span>
-                  {stage === 'ابتدائي' && '🏫'}
-                  {stage === 'إعدادي' && '📚'}
-                  {stage === 'ثانوي' && '🎓'}
-                </span>
-                <span>{stage}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {step === 1 && (
-          <div className="flex flex-col gap-3">
-            {(gradesByStage[selectedStage] || []).map((grade) => (
-              <button
-                key={grade}
-                onClick={() => setSelectedGrade(grade)}
-                className="w-full py-5 px-6 rounded-2xl text-right font-bold text-lg transition-all active:scale-95 flex items-center justify-between"
-                style={{
-                  background: selectedGrade === grade
-                    ? 'linear-gradient(135deg, #EFF6FF, #DBEAFE)'
-                    : 'white',
-                  border: `2px solid ${selectedGrade === grade ? '#1E6FF0' : '#F1F5F9'}`,
-                  color: selectedGrade === grade ? '#1E6FF0' : '#0F172A',
-                  boxShadow: selectedGrade === grade
-                    ? '0 4px 16px rgba(30,111,240,0.15)'
-                    : '0 2px 8px rgba(0,0,0,0.04)',
-                }}
-              >
-                <span>{selectedGrade === grade ? '✓' : ''}</span>
-                <span>{grade}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="grid grid-cols-2 gap-3">
-            {subjects.map((sub) => {
-              const isSelected = selectedSubjects.includes(sub.name);
-              return (
-                <button
-                  key={sub.name}
-                  onClick={() => toggleSubject(sub.name)}
-                  className="py-5 px-4 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95"
-                  style={{
-                    background: isSelected
-                      ? 'linear-gradient(135deg, #EFF6FF, #DBEAFE)'
-                      : 'white',
-                    border: `2px solid ${isSelected ? '#1E6FF0' : '#F1F5F9'}`,
-                    boxShadow: isSelected
-                      ? '0 4px 16px rgba(30,111,240,0.15)'
-                      : '0 2px 8px rgba(0,0,0,0.04)',
-                  }}
-                >
-                  <span className="text-3xl">{sub.icon}</span>
-                  <span
-                    className="text-sm font-bold text-center leading-tight"
-                    style={{ color: isSelected ? '#1E6FF0' : '#0F172A' }}
-                  >
-                    {sub.name}
-                  </span>
-                  {isSelected && <span className="text-blue-600 text-xs font-bold">✓</span>}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="اسمك الأول" className="mb-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 outline-none focus:border-blue-500" />
+        <p className="mb-2 text-sm font-black text-slate-800">النوع</p><div className="mb-5 grid grid-cols-2 gap-3">{([{id:'boy',label:'ولد',icon:'👦'},{id:'girl',label:'بنت',icon:'👧'}] as const).map(item => <button key={item.id} onClick={() => setGender(item.id)} className={`rounded-2xl border-2 bg-white p-4 font-black ${gender === item.id ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-slate-100 text-slate-700'}`}>{item.icon} {item.label}</button>)}</div>
+        <p className="mb-2 text-sm font-black text-slate-800">الصف</p><div className="mb-5 grid grid-cols-3 gap-2">{([1,2,3] as const).map(item => <button key={item} onClick={() => { setGrade(item); setTrackId(''); }} className={`rounded-2xl border-2 p-3 text-sm font-black ${grade === item ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-slate-100 bg-white text-slate-700'}`}>الصف {item === 1 ? 'الأول' : item === 2 ? 'الثاني' : 'الثالث'}</button>)}</div>
+        {grade > 0 && <><p className="mb-2 text-sm font-black text-slate-800">{grade === 1 ? 'المسار' : 'الشعبة / المسار'}</p><div className="grid grid-cols-1 gap-2">{tracks[grade].map(track => <button key={track.id} onClick={() => setTrackId(track.id)} className={`rounded-2xl border-2 p-4 text-right font-black ${trackId === track.id ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-slate-100 bg-white text-slate-700'}`}>{track.label}<span className="float-left">{trackId === track.id ? '✓' : '○'}</span></button>)}</div></>}
+        {error && <p className="mt-3 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{error}</p>}
       </div>
 
       {/* Next button */}
       <div className="px-6 pb-10 pt-4">
         <button
-          onClick={() => {
-            if (step < 2) setStep(step + 1);
-            else navigate('home');
-          }}
-          disabled={!canProceed()}
+          onClick={finish}
+          disabled={!canProceed || loading}
           className="w-full py-4 rounded-2xl text-white font-bold text-lg transition-all active:scale-95"
           style={{
-            background: canProceed()
+            background: canProceed
               ? 'linear-gradient(135deg, #1E6FF0, #7C3AED)'
               : '#E2E8F0',
-            color: canProceed() ? 'white' : '#94A3B8',
-            boxShadow: canProceed() ? '0 8px 24px rgba(30,111,240,0.4)' : 'none',
+            color: canProceed ? 'white' : '#94A3B8',
+            boxShadow: canProceed ? '0 8px 24px rgba(30,111,240,0.4)' : 'none',
           }}
         >
-          {step < 2 ? 'التالي →' : 'ابدأ التعلم 🚀'}
+          {loading ? 'جاري إنشاء الحساب...' : 'ابدأ التعلم 🚀'}
         </button>
       </div>
     </div>

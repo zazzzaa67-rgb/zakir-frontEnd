@@ -1,5 +1,6 @@
 import { NavProps } from '../App';
 import BottomNav from '../components/BottomNav';
+import { getStoredProfile } from '../lib/api';
 
 const quickActions = [
   { icon: '📚', label: 'المواد', screen: 'subjects' as const, color: '#EFF6FF', iconBg: '#1E6FF0' },
@@ -11,6 +12,9 @@ const quickActions = [
 ];
 
 export default function HomeScreen({ navigate }: NavProps) {
+  const profile = getStoredProfile();
+  const firstName = profile?.display_name?.split(' ')[0] || 'يا بطل';
+
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
       {/* Scrollable content */}
@@ -38,7 +42,7 @@ export default function HomeScreen({ navigate }: NavProps) {
             <div className="flex items-center gap-3">
               <div className="text-right">
                 <p className="text-white/70 text-sm font-medium">جاهز نذاكر النهارده؟</p>
-                <h1 className="text-white text-xl font-black">أهلاً يا أحمد 👋</h1>
+                <h1 className="text-white text-xl font-black">أهلاً يا {firstName} 👋</h1>
               </div>
               <div
                 className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
@@ -64,7 +68,7 @@ export default function HomeScreen({ navigate }: NavProps) {
                 <span className="text-lg">🏆</span>
                 <span className="text-white/80 text-xs font-semibold tracking-wide uppercase">Points</span>
               </div>
-              <div className="text-3xl font-black text-white leading-none">1,250</div>
+              <div className="text-3xl font-black text-white leading-none">{profile?.points ?? 0}</div>
               <div className="text-white/60 text-xs mt-1 font-medium">Level 12 • مستواك</div>
             </div>
 
@@ -80,7 +84,7 @@ export default function HomeScreen({ navigate }: NavProps) {
                 <span className="text-lg">🪙</span>
                 <span className="text-amber-900/80 text-xs font-semibold tracking-wide uppercase">Coins</span>
               </div>
-              <div className="text-3xl font-black text-amber-900 leading-none">85</div>
+              <div className="text-3xl font-black text-amber-900 leading-none">{profile?.coins ?? 0}</div>
               <div className="text-amber-900/60 text-xs mt-1 font-medium">افتح بيهم دروس</div>
             </div>
           </div>

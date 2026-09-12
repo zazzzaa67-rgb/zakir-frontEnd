@@ -1,4 +1,6 @@
+import { useEffect, useMemo, useState } from 'react';
 import { NavProps } from '../App';
+import { ApiLesson, getLessonsBySubject, getStoredProfile } from '../lib/api';
 
 type LessonStatus = 'completed' | 'in_progress' | 'available' | 'locked';
 
@@ -57,6 +59,38 @@ const difficultyColor: Record<string, string> = {
 export default function LessonListScreen({ navigate, params }: NavProps) {
   const subject = (params?.subject as string) || 'الرياضيات';
   const icon = (params?.icon as string) || '📐';
+  const subjectId = params?.subjectId as string | undefined;
+  const profile = getStoredProfile();
+  const [lessons, setLessons] = useState<ApiLesson[]>([]);
+  const [loading, setLoading] = useState(Boolean(subjectId));
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!subjectId) return;
+    getLessonsBySubject(subjectId, profile?.track_id)
+      .then(setLessons)
+      .catch((requestError) => setError(requestError.message))
+      .finally(() => setLoading(false));
+  }, [subjectId, profile?.track_id]);
+
+  const visibleUnits = useMemo(() => {
+    if (!subjectId) return units;
+    const grouped = new Map<string, Lesson[]>();
+    lessons.forEach((lesson) => {
+      const unitTitle = lesson.unit_title || lesson.chapter_name || 'دروس متنوعة';
+      const current = grouped.get(unitTitle) ?? [];
+      grouped.set(unitTitle, [...current, {
+        id: Number(lesson.id) || lesson.order_index,
+        title: lesson.lesson_title,
+        difficulty: lesson.difficulty,
+        time: `${lesson.duration_minutes} دقيقة`,
+        points: lesson.points_reward,
+        coinCost: lesson.coins_cost,
+        status: 'available',
+      }]);
+    });
+    return Array.from(grouped, ([title, unitLessons]) => ({ title, subtitle: '', lessons: unitLessons }));
+  }, [lessons, subjectId]);
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
@@ -76,7 +110,7 @@ export default function LessonListScreen({ navigate, params }: NavProps) {
         </div>
         <h1 className="text-2xl font-black text-white text-right">{subject}</h1>
         <div className="flex items-center gap-2 mt-2 justify-end">
-          <div className="text-blue-200 text-sm font-medium">25 درس</div>
+          <div className="text-blue-200 text-sm font-medium">{lessons.length || 0} درس</div>
           <div className="w-24 h-1.5 bg-white/20 rounded-full overflow-hidden">
             <div className="h-full bg-white rounded-full" style={{ width: '68%' }} />
           </div>
@@ -86,13 +120,16 @@ export default function LessonListScreen({ navigate, params }: NavProps) {
 
       {/* Units and lessons */}
       <div className="flex-1 overflow-y-auto px-5 py-4">
-        {units.map((unit) => (
+        {loading && <div className="text-center text-slate-500 py-10">جاري تحميل الدروس...</div>}
+        {error && <div className="text-center text-red-500 py-10">{error}</div>}
+        {!loading && !error && subjectId && visibleUnits.length === 0 && <div className="text-center text-slate-500 py-10">لا توجد دروس لهذه المادة حاليا</div>}
+        {!error && visibleUnits.map((unit) => (
           <div key={unit.title} className="mb-5">
             {/* Unit header */}
             <div className="flex items-center justify-end gap-2 mb-3">
               <div className="text-right">
                 <div className="text-xs text-slate-500 font-semibold">{unit.title}</div>
-                <div className="text-base font-black text-slate-900">{unit.subtitle}</div>
+                <div className="text-base font-black text-slate-900">{unit.subtitle || 'دروس الوحدة'}</div>
               </div>
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-base"
@@ -111,7 +148,7 @@ export default function LessonListScreen({ navigate, params }: NavProps) {
                 return (
                   <button
                     key={lesson.id}
-                    onClick={() => !isLocked && navigate('ai_lesson', { lesson: lesson.title })}
+                    onClick={() => !isLocked && navigate('ai_lesson', { lesson: lesson.title, lessonId: lesson.id.toString() })}
                     className="bg-white rounded-2xl p-4 flex items-center gap-3 text-right active:scale-98 transition-transform"
                     style={{
                       boxShadow: '0 2px 10px rgba(0,0,0,0.05)',

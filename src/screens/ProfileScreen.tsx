@@ -2,6 +2,7 @@ import { NavProps } from '../App';
 import BottomNav from '../components/BottomNav';
 
 const menuItems = [
+  { icon: '👥', label: 'فرقتي الدراسية', screen: 'teams' as const },
   { icon: '🔔', label: 'الإشعارات', screen: 'notifications' as const, badge: '3' },
   { icon: '🪙', label: 'Coins محفظتي', screen: 'coins' as const },
   { icon: '🏆', label: 'مستواي وإنجازاتي', screen: 'gamification' as const },
