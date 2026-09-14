@@ -8,9 +8,14 @@ export default function AuthScreen({ navigate }: NavProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   async function submit() {
     setError('');
+    if (!isValidEmail) {
+      setError('اكتب بريدًا إلكترونيًا صحيحًا مثل student@gmail.com');
+      return;
+    }
     setLoading(true);
     try {
       if (mode === 'signup') {
@@ -42,7 +47,7 @@ export default function AuthScreen({ navigate }: NavProps) {
           <label className="mb-2 block text-xs font-bold text-white/60">كلمة المرور</label>
           <input dir="ltr" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="6 أحرف على الأقل" className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-4 text-left outline-none placeholder:text-white/30 focus:border-cyan-300" />
           {error && <p className="mt-3 rounded-xl bg-red-400/15 p-3 text-sm font-bold text-red-200">{error}</p>}
-          <button disabled={!email || password.length < 6 || loading} onClick={submit} className="mt-6 w-full rounded-2xl bg-cyan-300 py-4 font-black text-[#08203b] shadow-lg shadow-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-40">{loading ? 'لحظة...' : mode === 'signin' ? 'ادخل حسابك ←' : 'كمّل بياناتك ←'}</button>
+          <button disabled={!isValidEmail || password.length < 6 || loading} onClick={submit} className="mt-6 w-full rounded-2xl bg-cyan-300 py-4 font-black text-[#08203b] shadow-lg shadow-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-40">{loading ? 'لحظة...' : mode === 'signin' ? 'ادخل حسابك ←' : 'كمّل بياناتك ←'}</button>
         </div>
         <p className="mt-5 text-center text-xs leading-6 text-white/40">حسابك بيحدد موادك ومسارك وبيخلي تقدمك محفوظ على كل أجهزتك.</p>
       </div>

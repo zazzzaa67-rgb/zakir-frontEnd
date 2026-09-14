@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react';
 import { NavProps } from '../App';
 import BottomNav from '../components/BottomNav';
-import { getStoredProfile } from '../lib/api';
+import { getLeaderboard, getStoredProfile, getTeam } from '../lib/api';
 
 const quickActions = [
   { icon: '📚', label: 'المواد', screen: 'subjects' as const, color: '#EFF6FF', iconBg: '#1E6FF0' },
@@ -14,6 +15,19 @@ const quickActions = [
 export default function HomeScreen({ navigate }: NavProps) {
   const profile = getStoredProfile();
   const firstName = profile?.display_name?.split(' ')[0] || 'يا بطل';
+  const [team, setTeam] = useState<any>(null);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+
+  useEffect(() => {
+    Promise.all([getTeam(), getLeaderboard()])
+      .then(([teamResult, leaderboardResult]) => {
+        setTeam(teamResult.team);
+        setLeaderboard(leaderboardResult.teams.slice(0, 3));
+      })
+      .catch(() => {
+        setLeaderboard([]);
+      });
+  }, []);
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
@@ -188,6 +202,46 @@ export default function HomeScreen({ navigate }: NavProps) {
                 <span className="text-xs font-bold text-slate-700 text-center leading-tight">{action.label}</span>
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Teams */}
+        <div className="px-5 mt-5">
+          <div
+            className="rounded-3xl p-5"
+            style={{
+              background: 'linear-gradient(135deg, #0B1A34 0%, #164E63 100%)',
+              boxShadow: '0 8px 24px rgba(11,26,52,0.2)',
+            }}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <button
+                onClick={() => navigate('teams')}
+                className="rounded-xl bg-cyan-300 px-3 py-2 text-xs font-black text-[#0B1A34] active:scale-95"
+              >
+                {team ? 'فتح الفرقة' : 'اعمل فرقتك'}
+              </button>
+              <div className="text-right">
+                <p className="text-xs font-bold text-cyan-200">مذاكرة جماعية</p>
+                <h2 className="mt-1 text-xl font-black text-white">الفرق وترتيب المنافسة</h2>
+                <p className="mt-1 text-xs text-white/60">نافسوا بالنقاط وذاكروا معًا</p>
+              </div>
+            </div>
+            <div className="mt-4 border-t border-white/10 pt-3">
+              {leaderboard.length > 0 ? leaderboard.map((item, index) => (
+                <button
+                  key={item.id}
+                  onClick={() => navigate('teams')}
+                  className="flex w-full items-center gap-3 border-b border-white/10 py-2 last:border-0"
+                >
+                  <strong className="w-5 text-center text-sm text-cyan-200">{index + 1}</strong>
+                  <span className="flex-1 text-right text-sm font-bold text-white">{item.name}</span>
+                  <span className="text-xs font-black text-amber-300">{item.totalPoints.toLocaleString()} نقطة</span>
+                </button>
+              )) : (
+                <p className="py-2 text-center text-sm font-medium text-white/60">كن أول فريق في الترتيب</p>
+              )}
+            </div>
           </div>
         </div>
 
