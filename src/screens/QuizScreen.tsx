@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { NavProps } from '../App';
+import { LessonQuestion } from '../lib/api';
 
-const questions = [
+const fallbackQuestions = [
   {
     question: 'إيه الحل الصح لمعادلة: 2x + 6 = 14؟',
     options: ['x = 2', 'x = 4', 'x = 6', 'x = 8'],
@@ -34,7 +35,17 @@ const questions = [
   },
 ];
 
-export default function QuizScreen({ navigate }: NavProps) {
+export default function QuizScreen({ navigate, params }: NavProps) {
+  const lessonQuestions = params?.questions as LessonQuestion[] | undefined;
+  const questions = lessonQuestions?.length
+    ? lessonQuestions.map((item) => ({
+      question: item.question ?? 'سؤال الدرس',
+      options: item.options ?? [],
+      correct: item.correct_index ?? 0,
+      explanation: item.explanation ?? 'راجع شرح الدرس مع مساعد ذاكر معي.',
+    }))
+    : fallbackQuestions;
+  const lesson = (params?.lesson as string) || 'الدرس';
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -136,12 +147,12 @@ export default function QuizScreen({ navigate }: NavProps) {
             >
               ارجع للأخطاء ❌
             </button>
-            <button
-              onClick={() => navigate('home')}
+              <button
+                onClick={() => navigate('ai_lesson', { lesson, lessonId: params?.lessonId })}
               className="w-full py-4 rounded-2xl text-white font-bold text-base"
               style={{ background: 'linear-gradient(135deg, #1E6FF0, #7C3AED)', boxShadow: '0 8px 24px rgba(30,111,240,0.35)' }}
             >
-              العودة للرئيسية 🏠
+              العودة للدرس ←
             </button>
           </div>
         </div>

@@ -36,6 +36,14 @@ export type ApiLesson = {
   coins_cost: number;
   order_index: number;
   generation_status: string;
+  books?: { id: string; title: string; source_url?: string | null; status: string };
+};
+
+export type LessonQuestion = {
+  question?: string;
+  options?: string[];
+  correct_index?: number;
+  explanation?: string;
 };
 
 export type LessonDetails = ApiLesson & {
@@ -45,8 +53,9 @@ export type LessonDetails = ApiLesson & {
     key_points?: string[];
     exam?: unknown[];
     homework?: unknown[];
-    quiz?: unknown[];
+    quiz?: LessonQuestion[];
   };
+  books?: { id: string; title: string; source_url?: string | null; status: string };
 };
 
 export function getAccessToken() {
@@ -114,6 +123,13 @@ export async function getLessonsBySubject(subjectId: string, trackId?: string) {
 
 export async function getLessonById(lessonId: string) {
   return request<LessonDetails>(`/lessons/${encodeURIComponent(lessonId)}`);
+}
+
+export async function askLessonAI(lessonId: string, message: string, history: Array<{ role: 'user' | 'model'; text: string }>) {
+  return request<{ answer: string }>(`/lessons/${encodeURIComponent(lessonId)}/chat`, {
+    method: 'POST',
+    body: JSON.stringify({ message, history }),
+  });
 }
 
 export async function getTeam() { return request<{ team: any; invitations: any[] }>('/teams'); }

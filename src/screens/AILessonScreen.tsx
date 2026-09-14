@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { NavProps } from '../App';
 import BottomNav from '../components/BottomNav';
-import { getLessonById, LessonDetails } from '../lib/api';
+import { askLessonAI, getLessonById, LessonDetails } from '../lib/api';
 
 const modes = [
-  { icon: '📝', label: 'الواجب', screen: 'homework' as const },
-  { icon: '🧠', label: 'الامتحان', screen: 'quiz' as const },
-  { icon: '🎥', label: 'فيديو الشرح الذكي', screen: 'video' as const },
+  { icon: '📄', label: 'ملف الدرس PDF', screen: 'pdf' as const },
+  { icon: '📝', label: 'واجب الدرس', screen: 'homework' as const },
+  { icon: '🧠', label: 'امتحان الدرس', screen: 'quiz' as const },
 ];
 
 const aiMessages = [
@@ -19,10 +19,10 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
   const lesson = (params?.lesson as string) || 'المعادلات الخطية';
   const lessonId = params?.lessonId as string | undefined;
   const [lessonDetails, setLessonDetails] = useState<LessonDetails | null>(null);
-  const [videoComingSoon, setVideoComingSoon] = useState(false);
-  const [activeMsg, setActiveMsg] = useState(1);
   const [userInput, setUserInput] = useState('');
   const [messages, setMessages] = useState(aiMessages);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState('');
 
   useEffect(() => {
     if (!lessonId) return;
@@ -30,8 +30,10 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
   }, [lessonId]);
 
   const openMode = (mode: typeof modes[number]) => {
-    if (mode.screen === 'video') {
-      setVideoComingSoon(true);
+    if (mode.screen === 'pdf') {
+      const pdfUrl = lessonDetails?.books?.source_url;
+      if (pdfUrl) window.open(pdfUrl, '_blank', 'noopener,noreferrer');
+      else setChatError('ملف PDF لهذا الدرس غير متاح حاليا');
       return;
     }
     navigate(mode.screen, {
@@ -41,11 +43,29 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
     });
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!userInput.trim()) return;
-    setMessages([...messages, `أنت: ${userInput}`, 'ممتاز! سؤال حلو. خليني أوضحلك أكتر...']);
+    if (!lessonId) {
+      setChatError('افتح المحادثة من درس محدد حتى أقدر أجاوب من محتواه');
+      return;
+    }
+    const message = userInput.trim();
+    const history = messages.map((item) => ({
+      role: item.startsWith('أنت:') ? 'user' as const : 'model' as const,
+      text: item.replace(/^أنت:\s*/, ''),
+    }));
+    setMessages((current) => [...current, `أنت: ${message}`]);
     setUserInput('');
-    setActiveMsg(messages.length + 1);
+    setChatError('');
+    setChatLoading(true);
+    try {
+      const result = await askLessonAI(lessonId, message, history);
+      setMessages((current) => [...current, result.answer]);
+    } catch (error) {
+      setChatError(error instanceof Error ? error.message : 'تعذر تشغيل مساعد الدرس');
+    } finally {
+      setChatLoading(false);
+    }
   };
 
   return (
@@ -120,13 +140,7 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
             </button>
           ))}
         </div>
-        {videoComingSoon && (
-          <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-right">
-            <div className="mb-1 font-black text-blue-900">فيديو الشرح الذكي قيد التجهيز 🎥</div>
-            <p className="text-sm font-medium leading-6 text-blue-700">نعمل عليه حاليا وسيتم إطلاقه قريبا لضمان أفضل أداء وتجربة شرح.</p>
-            <button onClick={() => setVideoComingSoon(false)} className="mt-2 text-xs font-black text-blue-600">حسنا</button>
-          </div>
-        )}
+        {chatError && <div className="mb-4 rounded-2xl border border-red-100 bg-red-50 p-3 text-right text-sm font-bold text-red-600">{chatError}</div>}
       </div>
 
       {/* Chat area */}
@@ -167,8 +181,8 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
           {/* Quick response buttons */}
           <div className="flex flex-wrap gap-2 justify-end mt-1">
             {[
-              { label: '👍 أيوه فهمت', action: () => { setMessages([...messages, 'أيوه فهمت', 'ممتاز! 🎉 خليني أكمل في النقطة الجاية..']); } },
-              { label: '🤔 اشرحها تاني', action: () => { setMessages([...messages, 'محتاج شرح تاني', 'طبعاً! هشرحهالك بطريقة مختلفة 💡']); } },
+              { label: '👍 أيوه فهمت', action: () => setUserInput('اديني مثال كمان من الدرس') },
+              { label: '🤔 اشرحها تاني', action: () => setUserInput('اشرح النقطة دي بطريقة أبسط') },
               { label: '❓ عندي سؤال', action: () => setUserInput('') },
             ].map((btn) => (
               <button
@@ -193,21 +207,23 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
       <div className="px-5 pb-24 pt-3 bg-white border-t border-slate-100">
         <div className="flex gap-2 items-center">
           <button
-            onClick={handleSend}
+            onClick={() => void handleSend()}
+            disabled={chatLoading || !userInput.trim()}
             className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform"
-            style={{ background: 'linear-gradient(135deg, #1E6FF0, #7C3AED)', color: 'white' }}
+            style={{ background: 'linear-gradient(135deg, #1E6FF0, #7C3AED)', color: 'white', opacity: chatLoading || !userInput.trim() ? 0.5 : 1 }}
           >
             ↑
           </button>
           <input
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            onKeyDown={(e) => e.key === 'Enter' && void handleSend()}
             placeholder="اسألني أي سؤال عن الدرس..."
             className="flex-1 bg-slate-50 rounded-xl px-4 py-3 text-sm text-slate-900 text-right outline-none border border-slate-200 placeholder:text-slate-400"
             style={{ fontFamily: 'Cairo, sans-serif' }}
           />
         </div>
+        {chatLoading && <p className="mt-2 text-right text-xs font-bold text-blue-600">مساعد الدرس بيجهز الإجابة...</p>}
       </div>
 
       <BottomNav active="ai_lesson" navigate={navigate} />
