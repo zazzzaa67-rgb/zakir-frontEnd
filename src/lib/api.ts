@@ -62,6 +62,12 @@ export function getAccessToken() {
   return localStorage.getItem('zakker_access_token');
 }
 
+export function clearAuth() {
+  localStorage.removeItem('zakker_access_token');
+  localStorage.removeItem('zakker_refresh_token');
+  localStorage.removeItem('zakker_profile');
+}
+
 export function getStoredProfile(): StudentProfile | null {
   const storedProfile = localStorage.getItem('zakker_profile');
   if (!storedProfile) return null;
@@ -94,19 +100,21 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export async function signIn(email: string, password: string) {
-  const result = await request<{ accessToken: string; profile: StudentProfile }>('/auth/signin', {
+  const result = await request<{ accessToken: string; refreshToken: string; profile: StudentProfile }>('/auth/signin', {
     method: 'POST', body: JSON.stringify({ email, password }),
   });
   localStorage.setItem('zakker_access_token', result.accessToken);
+  localStorage.setItem('zakker_refresh_token', result.refreshToken);
   localStorage.setItem('zakker_profile', JSON.stringify(result.profile));
   return result.profile;
 }
 
 export async function signUp(payload: { email: string; password: string; displayName: string; gender: string; gradeLevel: number; trackId: string }) {
-  const result = await request<{ accessToken: string; profile: StudentProfile }>('/auth/signup', {
+  const result = await request<{ accessToken: string; refreshToken: string; profile: StudentProfile }>('/auth/signup', {
     method: 'POST', body: JSON.stringify(payload),
   });
   localStorage.setItem('zakker_access_token', result.accessToken);
+  localStorage.setItem('zakker_refresh_token', result.refreshToken);
   localStorage.setItem('zakker_profile', JSON.stringify(result.profile));
   return result.profile;
 }
