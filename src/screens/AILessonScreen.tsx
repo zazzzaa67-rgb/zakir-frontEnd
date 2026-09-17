@@ -39,7 +39,9 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
     navigate(mode.screen, {
       lessonId,
       lesson,
-      questions: mode.screen === 'homework' ? lessonDetails?.content_json.homework : lessonDetails?.content_json.exam,
+      questions: mode.screen === 'homework'
+        ? lessonDetails?.content_json.homework ?? lessonDetails?.content_json.quiz
+        : lessonDetails?.content_json.exam ?? lessonDetails?.content_json.quiz,
     });
   };
 

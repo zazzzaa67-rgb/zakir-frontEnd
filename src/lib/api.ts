@@ -78,9 +78,34 @@ export function getStoredProfile(): StudentProfile | null {
   }
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+function storeSession(result: { accessToken: string; refreshToken: string; profile: StudentProfile }) {
+  localStorage.setItem('zakker_access_token', result.accessToken);
+  localStorage.setItem('zakker_refresh_token', result.refreshToken);
+  localStorage.setItem('zakker_profile', JSON.stringify(result.profile));
+}
+
+export async function restoreSession() {
+  const refreshToken = localStorage.getItem('zakker_refresh_token');
+  if (!refreshToken) return null;
+  try {
+    const result = await fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!result.ok) throw new Error('جلسة الدخول منتهية');
+    const body = await result.json() as { accessToken: string; refreshToken: string; profile: StudentProfile };
+    storeSession(body);
+    return body.profile;
+  } catch {
+    clearAuth();
+    return null;
+  }
+}
+
+async function requestOnce<T>(path: string, options: RequestInit = {}): Promise<Response> {
   const token = getAccessToken();
-  const response = await fetch(`${API_URL}${path}`, {
+  return fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -88,6 +113,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       ...(options.headers ?? {}),
     },
   });
+}
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  let response = await requestOnce(path, options);
+  if (response.status === 401 && !path.startsWith('/auth/')) {
+    const profile = await restoreSession();
+    if (profile) response = await requestOnce(path, options);
+  }
   const responseText = await response.text();
   let body: { error?: string } = {};
   try {
@@ -103,9 +136,7 @@ export async function signIn(email: string, password: string) {
   const result = await request<{ accessToken: string; refreshToken: string; profile: StudentProfile }>('/auth/signin', {
     method: 'POST', body: JSON.stringify({ email, password }),
   });
-  localStorage.setItem('zakker_access_token', result.accessToken);
-  localStorage.setItem('zakker_refresh_token', result.refreshToken);
-  localStorage.setItem('zakker_profile', JSON.stringify(result.profile));
+  storeSession(result);
   return result.profile;
 }
 
@@ -113,9 +144,7 @@ export async function signUp(payload: { email: string; password: string; display
   const result = await request<{ accessToken: string; refreshToken: string; profile: StudentProfile }>('/auth/signup', {
     method: 'POST', body: JSON.stringify(payload),
   });
-  localStorage.setItem('zakker_access_token', result.accessToken);
-  localStorage.setItem('zakker_refresh_token', result.refreshToken);
-  localStorage.setItem('zakker_profile', JSON.stringify(result.profile));
+  storeSession(result);
   return result.profile;
 }
 

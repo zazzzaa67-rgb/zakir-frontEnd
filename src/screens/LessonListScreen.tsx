@@ -5,12 +5,13 @@ import { ApiLesson, getLessonsBySubject, getStoredProfile } from '../lib/api';
 type LessonStatus = 'completed' | 'in_progress' | 'available' | 'locked';
 
 interface Lesson {
-  id: number;
+  id: string | number;
   title: string;
   difficulty: string;
   time: string;
   points: number;
   coinCost?: number;
+  order_index?: number;
   status: LessonStatus;
 }
 
@@ -80,7 +81,7 @@ export default function LessonListScreen({ navigate, params }: NavProps) {
       const unitTitle = lesson.unit_title || lesson.chapter_name || 'دروس متنوعة';
       const current = grouped.get(unitTitle) ?? [];
       grouped.set(unitTitle, [...current, {
-        id: Number(lesson.id) || lesson.order_index,
+        id: lesson.id,
         title: lesson.lesson_title,
         difficulty: lesson.difficulty,
         time: `${lesson.duration_minutes} دقيقة`,
@@ -160,7 +161,7 @@ export default function LessonListScreen({ navigate, params }: NavProps) {
                       className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-base"
                       style={{ background: st.bg, color: st.color }}
                     >
-                      {isCompleted ? '✓' : isLocked ? '🔒' : lesson.id.toString()}
+                      {isCompleted ? '✓' : isLocked ? '🔒' : lesson.order_index ?? lesson.id}
                     </div>
 
                     {/* Content */}

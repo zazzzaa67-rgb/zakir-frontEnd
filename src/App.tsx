@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SplashScreen from './screens/SplashScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
@@ -20,6 +20,7 @@ import ProfileScreen from './screens/ProfileScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 import AuthScreen from './screens/AuthScreen';
 import TeamScreen from './screens/TeamScreen';
+import { restoreSession } from './lib/api';
 
 export type AppScreen =
   | 'splash' | 'onboarding' | 'auth' | 'setup' | 'teams'
@@ -37,6 +38,12 @@ export interface NavProps {
 export default function App() {
   const [screen, setScreen] = useState<AppScreen>('splash');
   const [params, setParams] = useState<Record<string, unknown>>({});
+
+  useEffect(() => {
+    restoreSession().then((profile) => {
+      if (profile) setScreen('home');
+    });
+  }, []);
 
   const navigate = (s: AppScreen, p?: Record<string, unknown>) => {
     setScreen(s);
