@@ -1,6 +1,7 @@
-const rawUrl = (import.meta.env.VITE_API_URL ?? 'https://zakir-backend.vercel.app/api').replace(/\/$/, '');
-const API_URL = rawUrl.endsWith('/api') ? rawUrl : `${rawUrl}/api`;
-
+const configuredApiUrl = import.meta.env.VITE_API_URL ?? 'https://zakir-backend.vercel.app/api';
+const API_URL = configuredApiUrl.replace(/\/$/, '').endsWith('/api')
+  ? configuredApiUrl.replace(/\/$/, '')
+  : `${configuredApiUrl.replace(/\/$/, '')}/api`;
 
 export type StudentProfile = {
   id: string;
@@ -149,14 +150,21 @@ export async function signUp(payload: { email: string; password: string; display
   return result.profile;
 }
 
+
+
 export async function getSubjectsByTrack(trackId: string) {
-  if (!trackId) return [];  
-  const res = await request<Subject[]>(`/subjects?track_id=${encodeURIComponent(trackId)}`);
-  // التأكد من أن النتيجة القادمة هي مصفوفة فعلاً وليست undefined
-  if (Array.isArray(res)) {
-    return res;
+  if (!trackId || trackId === 'undefined' || trackId === 'null') {
+    console.error('getSubjectsByTrack: trackId is missing or invalid');
+    return [];
   }
-  return [];
+  
+  try {
+    const data = await request<Subject[]>(`/subjects?track_id=${encodeURIComponent(trackId)}`);
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error('Error fetching subjects:', err);
+    return [];
+  }
 }
 export async function getLessonsBySubject(subjectId: string, trackId?: string) {
   const query = new URLSearchParams({ subject_id: subjectId });
