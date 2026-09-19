@@ -48,6 +48,7 @@ export type LessonQuestion = {
 
 export type LessonDetails = ApiLesson & {
   content_json: {
+    pdf_summary_url?: string;
     summary?: string;
     detailed_explanation?: string;
     key_points?: string[];

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavProps } from '../App';
+import { useNavigate } from 'react-router-dom';
 
 const slides = [
   {
@@ -28,7 +28,8 @@ const slides = [
   },
 ];
 
-export default function OnboardingScreen({ navigate }: NavProps) {
+export default function OnboardingScreen() {
+  const navigate = useNavigate();
   const [current, setCurrent] = useState(0);
   const slide = slides[current];
   const isLast = current === slides.length - 1;
@@ -38,8 +39,8 @@ export default function OnboardingScreen({ navigate }: NavProps) {
       {/* Skip */}
       <div className="flex justify-start px-6 pt-12 pb-0">
         <button
-          onClick={() => navigate('auth')}
-          className="text-sm font-semibold text-slate-400 px-3 py-1.5 rounded-xl active:bg-slate-100 transition-colors"
+          onClick={() => navigate('/auth')}
+          className="text-sm font-semibold text-slate-400 px-3 py-1.5 rounded-xl active:bg-slate-100 transition-colors cursor-pointer"
         >
           تخطي
         </button>
@@ -107,7 +108,7 @@ export default function OnboardingScreen({ navigate }: NavProps) {
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            className="rounded-full transition-all"
+            className="rounded-full transition-all cursor-pointer"
             style={{
               width: i === current ? 28 : 8,
               height: 8,
@@ -121,8 +122,8 @@ export default function OnboardingScreen({ navigate }: NavProps) {
       <div className="px-6 pb-10 flex flex-col gap-3">
         {isLast ? (
           <button
-            onClick={() => navigate('auth')}
-            className="w-full py-4 rounded-2xl text-white font-bold text-lg active:scale-95 transition-transform"
+            onClick={() => navigate('/auth')}
+            className="w-full py-4 rounded-2xl text-white font-bold text-lg active:scale-95 transition-transform cursor-pointer"
             style={{
               background: `linear-gradient(135deg, ${slide.accent}, #7C3AED)`,
               boxShadow: `0 8px 24px ${slide.accent}50`,
@@ -133,7 +134,7 @@ export default function OnboardingScreen({ navigate }: NavProps) {
         ) : (
           <button
             onClick={() => setCurrent(current + 1)}
-            className="w-full py-4 rounded-2xl text-white font-bold text-lg active:scale-95 transition-transform"
+            className="w-full py-4 rounded-2xl text-white font-bold text-lg active:scale-95 transition-transform cursor-pointer"
             style={{
               background: `linear-gradient(135deg, ${slide.accent}, #1D4ED8)`,
               boxShadow: `0 8px 24px ${slide.accent}50`,

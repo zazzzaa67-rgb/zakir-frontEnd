@@ -1,4 +1,4 @@
-import { NavProps } from '../App';
+import { useNavigate } from 'react-router-dom';
 
 const earnMethods = [
   { icon: '📺', label: 'مشاهدة إعلان', reward: '+5 Coins', color: '#7C3AED', bg: '#F5F3FF' },
@@ -15,7 +15,9 @@ const recentTransactions = [
   { type: 'spend', label: 'فتح درس: المتباينات', amount: '-15', date: 'منذ 3 أيام' },
 ];
 
-export default function CoinsScreen({ navigate }: NavProps) {
+export default function CoinsScreen() {
+  const navigate = useNavigate();
+
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
       {/* Header */}
@@ -30,7 +32,7 @@ export default function CoinsScreen({ navigate }: NavProps) {
           <div className="px-3 py-1.5 rounded-xl bg-amber-900/30 text-amber-100 text-xs font-semibold">
             مختلف عن Points 🏆
           </div>
-          <button onClick={() => navigate('home')} className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center">
+          <button onClick={() => navigate('/home')} className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center cursor-pointer">
             <span className="text-white font-bold">→</span>
           </button>
         </div>
@@ -76,8 +78,8 @@ export default function CoinsScreen({ navigate }: NavProps) {
             <div className="text-amber-700 text-xs font-medium">كل درس إضافي = 15 Coins</div>
           </div>
           <button
-            onClick={() => navigate('subjects')}
-            className="flex-shrink-0 px-5 py-2.5 rounded-xl text-white font-bold text-sm active:scale-95 transition-transform"
+            onClick={() => navigate('/subjects')}
+            className="flex-shrink-0 px-5 py-2.5 rounded-xl text-white font-bold text-sm active:scale-95 transition-transform cursor-pointer"
             style={{ background: '#F59E0B', boxShadow: '0 4px 12px rgba(245,158,11,0.4)' }}
           >
             افتح درس
@@ -90,7 +92,7 @@ export default function CoinsScreen({ navigate }: NavProps) {
           {earnMethods.map((method) => (
             <button
               key={method.label}
-              className="rounded-2xl p-4 text-right active:scale-95 transition-transform"
+              className="rounded-2xl p-4 text-right active:scale-95 transition-transform cursor-pointer"
               style={{
                 background: method.bg,
                 border: `1.5px solid ${method.color}22`,

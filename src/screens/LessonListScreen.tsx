@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { NavProps } from '../App';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ApiLesson, getLessonsBySubject, getStoredProfile } from '../lib/api';
 
 type LessonStatus = 'completed' | 'in_progress' | 'available' | 'locked';
@@ -57,10 +57,12 @@ const difficultyColor: Record<string, string> = {
   'صعب': '#EF4444',
 };
 
-export default function LessonListScreen({ navigate, params }: NavProps) {
-  const subject = (params?.subject as string) || 'الرياضيات';
-  const icon = (params?.icon as string) || '📐';
-  const subjectId = params?.subjectId as string | undefined;
+export default function LessonListScreen() {
+  const { subjectId } = useParams<{ subjectId: string }>();
+  const navigate = useNavigate();
+
+  const subject = 'الرياضيات';
+  const icon = '📐';
   const profile = getStoredProfile();
   const [lessons, setLessons] = useState<ApiLesson[]>([]);
   const [loading, setLoading] = useState(Boolean(subjectId));
@@ -68,6 +70,9 @@ export default function LessonListScreen({ navigate, params }: NavProps) {
 
   useEffect(() => {
     if (!subjectId) return;
+    setLoading(true);
+    setError('');
+
     getLessonsBySubject(subjectId, profile?.track_id)
       .then(setLessons)
       .catch((requestError) => setError(requestError.message))
@@ -103,7 +108,7 @@ export default function LessonListScreen({ navigate, params }: NavProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="text-3xl">{icon}</div>
           <button
-            onClick={() => navigate('subjects')}
+            onClick={() => navigate('/subjects')}
             className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"
           >
             <span className="text-white text-lg font-bold">→</span>
@@ -149,7 +154,7 @@ export default function LessonListScreen({ navigate, params }: NavProps) {
                 return (
                   <button
                     key={lesson.id}
-                    onClick={() => !isLocked && navigate('ai_lesson', { lesson: lesson.title, lessonId: lesson.id.toString() })}
+                    onClick={() => !isLocked && navigate(`/ai-lesson/${lesson.id}`)}
                     className="bg-white rounded-2xl p-4 flex items-center gap-3 text-right active:scale-98 transition-transform"
                     style={{
                       boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
@@ -194,7 +199,7 @@ export default function LessonListScreen({ navigate, params }: NavProps) {
                             🪙 {lesson.coinCost}
                           </div>
                           <button
-                            onClick={(e) => { e.stopPropagation(); navigate('coins'); }}
+                            onClick={(e) => { e.stopPropagation(); navigate('/coins'); }}
                             className="text-xs font-bold text-white px-3 py-1 rounded-lg"
                             style={{ background: '#F59E0B' }}
                           >

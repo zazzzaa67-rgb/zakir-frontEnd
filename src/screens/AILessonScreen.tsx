@@ -31,9 +31,9 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
 
   const openMode = (mode: typeof modes[number]) => {
     if (mode.screen === 'pdf') {
-      const pdfUrl = lessonDetails?.books?.source_url;
+      const pdfUrl = lessonDetails?.content_json.pdf_summary_url;
       if (pdfUrl) window.open(pdfUrl, '_blank', 'noopener,noreferrer');
-      else setChatError('ملف PDF لهذا الدرس غير متاح حاليا');
+      else setChatError('مذكرة PDF لهذا الدرس غير متاحة حاليا');
       return;
     }
     navigate(mode.screen, {

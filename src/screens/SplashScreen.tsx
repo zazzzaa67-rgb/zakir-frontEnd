@@ -1,5 +1,4 @@
-import { NavProps } from '../App';
-
+import { useNavigate } from 'react-router-dom';
 const STARS = [
   { top: '8%', left: '12%', size: 3, delay: '0s' },
   { top: '15%', left: '78%', size: 2, delay: '0.5s' },
@@ -15,7 +14,9 @@ const STARS = [
   { top: '90%', left: '40%', size: 2, delay: '0.9s' },
 ];
 
-export default function SplashScreen({ navigate }: NavProps) {
+export default function SplashScreen() {
+  const navigate = useNavigate();
+
   return (
     <div
       className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden"
@@ -97,7 +98,6 @@ export default function SplashScreen({ navigate }: NavProps) {
           ⭐
         </div>
       </div>
-
       {/* App name */}
       <h1
         className="text-5xl font-black text-white mb-3 tracking-tight"
@@ -113,8 +113,8 @@ export default function SplashScreen({ navigate }: NavProps) {
 
       {/* CTA Button */}
       <button
-        onClick={() => navigate('onboarding')}
-        className="active:scale-95 transition-transform"
+        onClick={() => navigate('/onboarding')}
+        className="active:scale-95 transition-transform cursor-pointer"
         style={{
           background: 'linear-gradient(135deg, #ffffff 0%, #e8f0ff 100%)',
           color: '#1E6FF0',
