@@ -15,7 +15,7 @@ interface Lesson {
   status: LessonStatus;
 }
 
-const units: { title: string; subtitle: string; lessons: Lesson[] }[] = [
+const mockUnits: { title: string; subtitle: string; lessons: Lesson[] }[] = [
   {
     title: 'الوحدة الأولى',
     subtitle: 'الجبر',
@@ -75,76 +75,103 @@ export default function LessonListScreen() {
 
     getLessonsBySubject(subjectId, profile?.track_id)
       .then(setLessons)
-      .catch((requestError) => setError(requestError.message))
+      .catch((requestError) => setError(requestError.message || 'حدث خطأ أثناء تحميل الدروس'))
       .finally(() => setLoading(false));
   }, [subjectId, profile?.track_id]);
 
   const visibleUnits = useMemo(() => {
-    if (!subjectId) return units;
+    if (!subjectId) return mockUnits;
     const grouped = new Map<string, Lesson[]>();
+    
     lessons.forEach((lesson) => {
       const unitTitle = lesson.unit_title || lesson.chapter_name || 'دروس متنوعة';
       const current = grouped.get(unitTitle) ?? [];
-      grouped.set(unitTitle, [...current, {
-        id: lesson.id,
-        title: lesson.lesson_title,
-        difficulty: lesson.difficulty,
-        time: `${lesson.duration_minutes} دقيقة`,
-        points: lesson.points_reward,
-        coinCost: lesson.coins_cost,
-        status: 'available',
-      }]);
+      
+      // تحديد حالة الدرس بشكل أفضل بمرونة
+      let status: LessonStatus = 'available';
+      if (lesson.is_unlocked === false) {
+        status = 'locked';
+      } else if (lesson.status) {
+        status = lesson.status as LessonStatus;
+      }
+
+      grouped.set(unitTitle, [
+        ...current,
+        {
+          id: lesson.id,
+          title: lesson.lesson_title,
+          difficulty: lesson.difficulty || 'متوسط',
+          time: lesson.duration_minutes ? `${lesson.duration_minutes} دقيقة` : '15 دقيقة',
+          points: lesson.points_reward ?? 20,
+          coinCost: lesson.coins_cost ?? 0,
+          status,
+        },
+      ]);
     });
-    return Array.from(grouped, ([title, unitLessons]) => ({ title, subtitle: '', lessons: unitLessons }));
+
+    return Array.from(grouped, ([title, unitLessons]) => ({
+      title,
+      subtitle: '',
+      lessons: unitLessons,
+    }));
   }, [lessons, subjectId]);
 
+  const totalLessonsCount = subjectId ? lessons.length : mockUnits.reduce((acc, u) => acc + u.lessons.length, 0);
+
   return (
-    <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
+    <div className="w-full h-full flex flex-col bg-[#F0F4FF] text-right" dir="rtl">
       {/* Header */}
       <div
         className="px-5 pt-12 pb-5 relative overflow-hidden"
         style={{ background: 'linear-gradient(160deg, #1E6FF0 0%, #0D4FB5 100%)' }}
       >
         <div className="flex items-center justify-between mb-4">
-          <div className="text-3xl">{icon}</div>
           <button
             onClick={() => navigate('/subjects')}
-            className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"
+            className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
           >
-            <span className="text-white text-lg font-bold">→</span>
+            <span className="text-white text-lg font-bold">←</span>
           </button>
+          <div className="text-3xl">{icon}</div>
         </div>
-        <h1 className="text-2xl font-black text-white text-right">{subject}</h1>
-        <div className="flex items-center gap-2 mt-2 justify-end">
-          <div className="text-blue-200 text-sm font-medium">{lessons.length || 0} درس</div>
+
+        <h1 className="text-2xl font-black text-white">{subject}</h1>
+        
+        <div className="flex items-center gap-2 mt-2 justify-start">
+          <div className="text-white text-sm font-bold">68%</div>
           <div className="w-24 h-1.5 bg-white/20 rounded-full overflow-hidden">
             <div className="h-full bg-white rounded-full" style={{ width: '68%' }} />
           </div>
-          <div className="text-white text-sm font-bold">68%</div>
+          <div className="text-blue-200 text-sm font-medium">{totalLessonsCount} درس</div>
         </div>
       </div>
 
-      {/* Units and lessons */}
-      <div className="flex-1 overflow-y-auto px-5 py-4">
-        {loading && <div className="text-center text-slate-500 py-10">جاري تحميل الدروس...</div>}
-        {error && <div className="text-center text-red-500 py-10">{error}</div>}
-        {!loading && !error && subjectId && visibleUnits.length === 0 && <div className="text-center text-slate-500 py-10">لا توجد دروس لهذه المادة حاليا</div>}
+      {/* Units and lessons list */}
+      <div className="flex-1 overflow-y-auto px-5 py-4 pb-20">
+        {loading && <div className="text-center text-slate-500 py-10 font-bold">جاري تحميل الدروس...</div>}
+        {error && <div className="text-center text-red-500 py-10 font-bold">{error}</div>}
+        
+        {!loading && !error && subjectId && visibleUnits.length === 0 && (
+          <div className="text-center text-slate-500 py-10 font-bold">لا توجد دروس لهذه المادة حالياً</div>
+        )}
+
         {!error && visibleUnits.map((unit) => (
           <div key={unit.title} className="mb-5">
-            {/* Unit header */}
-            <div className="flex items-center justify-end gap-2 mb-3">
-              <div className="text-right">
-                <div className="text-xs text-slate-500 font-semibold">{unit.title}</div>
-                <div className="text-base font-black text-slate-900">{unit.subtitle || 'دروس الوحدة'}</div>
-              </div>
+            {/* Unit Header */}
+            <div className="flex items-center justify-start gap-2 mb-3">
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-base"
                 style={{ background: '#1E6FF022' }}
               >
                 📂
               </div>
+              <div className="text-right">
+                <div className="text-xs text-slate-500 font-semibold">{unit.title}</div>
+                <div className="text-base font-black text-slate-900">{unit.subtitle || 'دروس الوحدة'}</div>
+              </div>
             </div>
 
+            {/* Lessons List */}
             <div className="flex flex-col gap-2.5">
               {unit.lessons.map((lesson) => {
                 const st = statusConfig[lesson.status];
@@ -152,18 +179,19 @@ export default function LessonListScreen() {
                 const isCompleted = lesson.status === 'completed';
 
                 return (
-                  <button
+                  <div
                     key={lesson.id}
                     onClick={() => !isLocked && navigate(`/ai-lesson/${lesson.id}`)}
-                    className="bg-white rounded-2xl p-4 flex items-center gap-3 text-right active:scale-98 transition-transform"
+                    className={`bg-white rounded-2xl p-4 flex items-center gap-3 text-right transition-transform ${
+                      isLocked ? 'cursor-not-allowed opacity-80' : 'cursor-pointer active:scale-98'
+                    }`}
                     style={{
                       boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-                      opacity: isLocked ? 0.8 : 1,
                     }}
                   >
                     {/* Status icon */}
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-base"
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-base font-bold"
                       style={{ background: st.bg, color: st.color }}
                     >
                       {isCompleted ? '✓' : isLocked ? '🔒' : lesson.order_index ?? lesson.id}
@@ -177,7 +205,7 @@ export default function LessonListScreen() {
                       >
                         {lesson.title}
                       </div>
-                      <div className="flex items-center gap-2 justify-end flex-wrap">
+                      <div className="flex items-center gap-2 justify-start flex-wrap">
                         <span className="text-xs text-slate-400 font-medium">⏱️ {lesson.time}</span>
                         <span
                           className="text-xs font-bold px-2 py-0.5 rounded-md"
@@ -191,7 +219,7 @@ export default function LessonListScreen() {
                       </div>
                     </div>
 
-                    {/* Right: reward or unlock */}
+                    {/* Right: Reward or Unlock */}
                     <div className="flex flex-col items-end gap-1 flex-shrink-0">
                       {isLocked ? (
                         <>
@@ -199,9 +227,12 @@ export default function LessonListScreen() {
                             🪙 {lesson.coinCost}
                           </div>
                           <button
-                            onClick={(e) => { e.stopPropagation(); navigate('/coins'); }}
-                            className="text-xs font-bold text-white px-3 py-1 rounded-lg"
-                            style={{ background: '#F59E0B' }}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate('/coins');
+                            }}
+                            className="text-xs font-bold text-white px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 cursor-pointer active:scale-95 transition-transform"
                           >
                             افتح
                           </button>
@@ -212,7 +243,7 @@ export default function LessonListScreen() {
                         </div>
                       )}
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>

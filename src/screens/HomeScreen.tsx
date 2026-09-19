@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
-import {useNavigate} from 'react-router-dom'
+import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { getLeaderboard, getStoredProfile, getTeam } from '../lib/api';
 
 const quickActions = [
-  { icon: '📚', label: 'المواد', screen: 'subjects' as const, color: '#EFF6FF', iconBg: '#1E6FF0' },
-  { icon: '🤖', label: 'ذاكر معي', screen: 'ai_lesson' as const, color: '#F5F3FF', iconBg: '#7C3AED' },
-  { icon: '📝', label: 'اختباراتي', screen: 'quiz' as const, color: '#FFF7ED', iconBg: '#F97316' },
-  { icon: '📊', label: 'تقدمي', screen: 'gamification' as const, color: '#F0FDF4', iconBg: '#10B981' },
-  { icon: '📅', label: 'جدول المذاكرة', screen: 'planner' as const, color: '#FFF5F5', iconBg: '#EF4444' },
-  { icon: '❌', label: 'أخطائي', screen: 'mistakes' as const, color: '#FEFCE8', iconBg: '#EAB308' },
+  { icon: '📚', label: 'المواد', path: '/subjects', color: '#EFF6FF', iconBg: '#1E6FF0' },
+  { icon: '🤖', label: 'ذاكر معي', path: '/ai-lesson', color: '#F5F3FF', iconBg: '#7C3AED' },
+  { icon: '📝', label: 'اختباراتي', path: '/quiz', color: '#FFF7ED', iconBg: '#F97316' },
+  { icon: '📊', label: 'تقدمي', path: '/gamification', color: '#F0FDF4', iconBg: '#10B981' },
+  { icon: '📅', label: 'جدول المذاكرة', path: '/planner', color: '#FFF5F5', iconBg: '#EF4444' },
+  { icon: '❌', label: 'أخطائي', path: '/mistakes', color: '#FEFCE8', iconBg: '#EAB308' },
 ];
 
 export default function HomeScreen() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const profile = getStoredProfile();
   const firstName = profile?.display_name?.split(' ')[0] || 'يا بطل';
   const [team, setTeam] = useState<any>(null);
@@ -31,7 +31,7 @@ export default function HomeScreen() {
   }, []);
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
+    <div className="w-full h-full flex flex-col bg-[#F0F4FF] text-right">
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto pb-24">
 
@@ -41,21 +41,25 @@ export default function HomeScreen() {
           style={{ background: 'linear-gradient(160deg, #1E6FF0 0%, #0D4FB5 100%)' }}
         >
           {/* decoration */}
-          <div className="absolute top-0 left-0 w-40 h-40 rounded-full opacity-10"
-            style={{ background: 'white', transform: 'translate(-30%, -30%)' }} />
-          <div className="absolute bottom-0 right-8 w-24 h-24 rounded-full opacity-10"
-            style={{ background: 'white', transform: 'translate(0, 50%)' }} />
+          <div
+            className="absolute top-0 left-0 w-40 h-40 rounded-full opacity-10 pointer-events-none"
+            style={{ background: 'white', transform: 'translate(-30%, -30%)' }}
+          />
+          <div
+            className="absolute bottom-0 right-8 w-24 h-24 rounded-full opacity-10 pointer-events-none"
+            style={{ background: 'white', transform: 'translate(0, 50%)' }}
+          />
 
           <div className="flex items-center justify-between mb-5">
             <button
-              onClick={() => navigate('notifications')}
-              className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center relative"
+              onClick={() => navigate('/notifications')}
+              className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center relative cursor-pointer active:scale-95 transition-transform"
             >
               <span className="text-xl">🔔</span>
               <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-400 rounded-full border-2 border-white" />
             </button>
             <div className="flex items-center gap-3">
-              <div className="text-right">
+              <div>
                 <p className="text-white/70 text-sm font-medium">جاهز نذاكر النهارده؟</p>
                 <h1 className="text-white text-xl font-black">أهلاً يا {firstName} 👋</h1>
               </div>
@@ -87,7 +91,7 @@ export default function HomeScreen() {
               <div className="text-white/60 text-xs mt-1 font-medium">Level 12 • مستواك</div>
             </div>
 
-            {/* Coins card — clearly different: amber/gold */}
+            {/* Coins card */}
             <div
               className="flex-1 rounded-2xl p-4"
               style={{
@@ -114,19 +118,21 @@ export default function HomeScreen() {
               boxShadow: '0 8px 32px rgba(67,56,202,0.35)',
             }}
           >
-            <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10"
-              style={{ background: 'white', transform: 'translate(30%, -30%)' }} />
+            <div
+              className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10 pointer-events-none"
+              style={{ background: 'white', transform: 'translate(30%, -30%)' }}
+            />
 
             <div className="flex items-start justify-between mb-4">
               <button
-                onClick={() => navigate('ai_lesson')}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold active:scale-95 transition-transform"
+                onClick={() => navigate('/ai-lesson')}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold cursor-pointer active:scale-95 transition-transform"
                 style={{ background: '#1E6FF0', color: 'white', boxShadow: '0 4px 12px rgba(30,111,240,0.5)' }}
               >
                 <span>ابدأ المذاكرة</span>
                 <span>▶️</span>
               </button>
-              <div className="text-right">
+              <div>
                 <div className="flex items-center gap-2 justify-end mb-1">
                   <span className="text-white/60 text-xs font-semibold">درس النهارده</span>
                   <span className="text-lg">🎯</span>
@@ -141,7 +147,7 @@ export default function HomeScreen() {
                 <span className="bg-white/10 px-3 py-1.5 rounded-lg">⏱️ 25 دقيقة</span>
                 <span className="bg-yellow-400/20 text-yellow-300 px-3 py-1.5 rounded-lg">+30 Points</span>
               </div>
-              <div className="text-left">
+              <div>
                 <div className="text-white/60 text-xs mb-1 font-medium">تقدم اليوم</div>
                 <div className="flex items-center gap-2">
                   <div className="w-24 h-2 rounded-full bg-white/20 overflow-hidden">
@@ -170,7 +176,7 @@ export default function HomeScreen() {
             >
               🔥
             </div>
-            <div className="flex-1 text-right">
+            <div className="flex-1">
               <div className="text-lg font-black text-orange-800">7 أيام متتالية</div>
               <div className="text-orange-600/70 text-sm font-medium mt-0.5">كمّل النهارده عشان تحافظ على الـ Streak!</div>
             </div>
@@ -180,15 +186,17 @@ export default function HomeScreen() {
         {/* Quick Actions */}
         <div className="px-5 mt-5">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-blue-600 text-sm font-bold">عرض الكل</span>
+            <button onClick={() => navigate('/subjects')} className="text-blue-600 text-sm font-bold cursor-pointer">
+              عرض الكل
+            </button>
             <h2 className="text-slate-900 text-lg font-black">الأدوات السريعة</h2>
           </div>
           <div className="grid grid-cols-3 gap-3">
             {quickActions.map((action) => (
               <button
                 key={action.label}
-                onClick={() => navigate(action.screen)}
-                className="rounded-2xl p-4 flex flex-col items-center gap-2 active:scale-95 transition-transform"
+                onClick={() => navigate(action.path)}
+                className="rounded-2xl p-4 flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform"
                 style={{
                   background: action.color,
                   boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
@@ -217,29 +225,31 @@ export default function HomeScreen() {
           >
             <div className="flex items-start justify-between gap-4">
               <button
-                onClick={() => navigate('teams')}
-                className="rounded-xl bg-cyan-300 px-3 py-2 text-xs font-black text-[#0B1A34] active:scale-95"
+                onClick={() => navigate('/teams')}
+                className="rounded-xl bg-cyan-300 px-3 py-2 text-xs font-black text-[#0B1A34] cursor-pointer active:scale-95 transition-transform"
               >
                 {team ? 'فتح الفرقة' : 'اعمل فرقتك'}
               </button>
-              <div className="text-right">
+              <div>
                 <p className="text-xs font-bold text-cyan-200">مذاكرة جماعية</p>
                 <h2 className="mt-1 text-xl font-black text-white">الفرق وترتيب المنافسة</h2>
                 <p className="mt-1 text-xs text-white/60">نافسوا بالنقاط وذاكروا معًا</p>
               </div>
             </div>
             <div className="mt-4 border-t border-white/10 pt-3">
-              {leaderboard.length > 0 ? leaderboard.map((item, index) => (
-                <button
-                  key={item.id}
-                  onClick={() => navigate('teams')}
-                  className="flex w-full items-center gap-3 border-b border-white/10 py-2 last:border-0"
-                >
-                  <strong className="w-5 text-center text-sm text-cyan-200">{index + 1}</strong>
-                  <span className="flex-1 text-right text-sm font-bold text-white">{item.name}</span>
-                  <span className="text-xs font-black text-amber-300">{item.totalPoints.toLocaleString()} نقطة</span>
-                </button>
-              )) : (
+              {leaderboard.length > 0 ? (
+                leaderboard.map((item, index) => (
+                  <button
+                    key={item.id}
+                    onClick={() => navigate('/teams')}
+                    className="flex w-full items-center gap-3 border-b border-white/10 py-2 last:border-0 cursor-pointer active:opacity-80"
+                  >
+                    <strong className="w-5 text-center text-sm text-cyan-200">{index + 1}</strong>
+                    <span className="flex-1 text-right text-sm font-bold text-white">{item.name}</span>
+                    <span className="text-xs font-black text-amber-300">{item.totalPoints?.toLocaleString()} نقطة</span>
+                  </button>
+                ))
+              ) : (
                 <p className="py-2 text-center text-sm font-medium text-white/60">كن أول فريق في الترتيب</p>
               )}
             </div>
@@ -256,8 +266,8 @@ export default function HomeScreen() {
             ].map((item) => (
               <button
                 key={item.subject}
-                onClick={() => navigate('lesson_list')}
-                className="bg-white rounded-2xl p-4 flex items-center gap-4 active:scale-98 transition-transform"
+                onClick={() => navigate('/lessons')}
+                className="bg-white rounded-2xl p-4 flex items-center gap-4 cursor-pointer active:scale-98 transition-transform"
                 style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.06)' }}
               >
                 <div
@@ -266,7 +276,7 @@ export default function HomeScreen() {
                 >
                   {item.icon}
                 </div>
-                <div className="flex-1 text-right">
+                <div className="flex-1">
                   <div className="font-black text-slate-900 text-sm">{item.subject}</div>
                   <div className="text-slate-500 text-xs font-medium mt-0.5">{item.lesson}</div>
                   <div className="mt-2 flex items-center gap-2">
@@ -285,7 +295,7 @@ export default function HomeScreen() {
           </div>
         </div>
       </div>
-      <BottomNav active="home"/>
+      <BottomNav active="home" />
     </div>
   );
 }

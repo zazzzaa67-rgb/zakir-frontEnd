@@ -36,9 +36,10 @@ export type ApiLesson = {
   coins_cost: number;
   order_index: number;
   generation_status: string;
+  is_unlocked?: boolean; // 👈 أضف هذا السطر
+  status?: string;       // 👈 أضف هذا السطر
   books?: { id: string; title: string; source_url?: string | null; status: string };
 };
-
 export type LessonQuestion = {
   question?: string;
   options?: string[];
