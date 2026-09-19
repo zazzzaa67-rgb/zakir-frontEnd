@@ -151,14 +151,13 @@ export async function signUp(payload: { email: string; password: string; display
 }
 
 export async function getSubjectsByTrack(trackId: string) {
-  if (!trackId) return [];
-  try {
-    return await request<Subject[]>(`/subjects?track_id=${encodeURIComponent(trackId)}`);
-  } catch (error) {
-    console.error('Retrying getSubjectsByTrack...', error);
-    // إعادة محاولة واحدة في حالة التأخير أو انتهاء الجلسة
-    return await request<Subject[]>(`/subjects?track_id=${encodeURIComponent(trackId)}`);
+  if (!trackId) return [];  
+  const res = await request<Subject[]>(`/subjects?track_id=${encodeURIComponent(trackId)}`);
+  // التأكد من أن النتيجة القادمة هي مصفوفة فعلاً وليست undefined
+  if (Array.isArray(res)) {
+    return res;
   }
+  return [];
 }
 export async function getLessonsBySubject(subjectId: string, trackId?: string) {
   const query = new URLSearchParams({ subject_id: subjectId });
