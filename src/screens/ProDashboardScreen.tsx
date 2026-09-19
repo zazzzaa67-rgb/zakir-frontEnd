@@ -1,11 +1,12 @@
-import { NavProps } from '../App';
+import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 
 const weekData = [15, 45, 30, 60, 25, 50, 40];
 const dayLabels = ['أح', 'اث', 'ث', 'أر', 'خ', 'ج', 'س'];
 const maxVal = Math.max(...weekData);
 
-export default function ProDashboardScreen({ navigate }: NavProps) {
+export default function ProDashboardScreen() {
+  const navigate = useNavigate()
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
       <div className="flex-1 overflow-y-auto pb-24">
@@ -183,7 +184,7 @@ export default function ProDashboardScreen({ navigate }: NavProps) {
         </div>
       </div>
 
-      <BottomNav active="gamification" navigate={navigate} />
+      <BottomNav active="gamification" />
     </div>
   );
 }

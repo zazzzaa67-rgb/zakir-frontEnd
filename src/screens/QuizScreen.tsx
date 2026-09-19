@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavProps } from '../App';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { LessonQuestion } from '../lib/api';
 
 const fallbackQuestions = [
@@ -35,17 +35,30 @@ const fallbackQuestions = [
   },
 ];
 
-export default function QuizScreen({ navigate, params }: NavProps) {
-  const lessonQuestions = params?.questions as LessonQuestion[] | undefined;
+interface LocationState {
+  questions?: LessonQuestion[];
+  lesson?: string;
+  lessonId?: string;
+}
+
+export default function QuizScreen() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const state = (location.state as LocationState) || {};
+
+  const lessonQuestions = state.questions;
   const questions = lessonQuestions?.length
     ? lessonQuestions.map((item) => ({
-      question: item.question ?? 'سؤال الدرس',
-      options: item.options ?? [],
-      correct: item.correct_index ?? 0,
-      explanation: item.explanation ?? 'راجع شرح الدرس مع مساعد ذاكر معي.',
-    }))
+        question: item.question ?? 'سؤال الدرس',
+        options: item.options ?? [],
+        correct: item.correct_index ?? 0,
+        explanation: item.explanation ?? 'راجع شرح الدرس مع مساعد ذاكر معي.',
+      }))
     : fallbackQuestions;
-  const lesson = (params?.lesson as string) || 'الدرس';
+
+  const lesson = state.lesson || 'الدرس';
+  const lessonId = state.lessonId;
+
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -82,22 +95,25 @@ export default function QuizScreen({ navigate, params }: NavProps) {
           style={{ background: 'linear-gradient(160deg, #1E6FF0 0%, #7C3AED 100%)' }}
         >
           <h1 className="text-2xl font-black text-white text-right mb-1">نتيجتك 🎯</h1>
-          <p className="text-blue-200 text-sm font-medium text-right">المعادلات الخطية</p>
+          <p className="text-blue-200 text-sm font-medium text-right">{lesson}</p>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-6">
+        <div className="flex-1 overflow-y-auto px-5 py-6 pb-24">
           {/* Score circle */}
           <div className="flex flex-col items-center mb-6">
             <div
-              className="w-36 h-36 rounded-full flex flex-col items-center justify-center mb-4"
+              className="w-36 h-36 rounded-full flex flex-col items-center justify-center mb-4 shadow-lg"
               style={{
-                background: percentage >= 70
-                  ? 'linear-gradient(135deg, #10B981, #059669)'
-                  : 'linear-gradient(135deg, #F97316, #EF4444)',
+                background:
+                  percentage >= 70
+                    ? 'linear-gradient(135deg, #10B981, #059669)'
+                    : 'linear-gradient(135deg, #F97316, #EF4444)',
                 boxShadow: `0 8px 32px ${percentage >= 70 ? 'rgba(16,185,129,0.4)' : 'rgba(249,115,22,0.4)'}`,
               }}
             >
-              <div className="text-4xl font-black text-white">{score}/{questions.length}</div>
+              <div className="text-4xl font-black text-white">
+                {score}/{questions.length}
+              </div>
               <div className="text-white/80 text-sm font-semibold">{percentage}%</div>
             </div>
 
@@ -112,9 +128,11 @@ export default function QuizScreen({ navigate, params }: NavProps) {
               +{score * 10} Points 🏆
             </div>
             <p className="text-slate-600 font-medium">
-              {percentage >= 80 ? 'ممتاز! أداؤك رائع 🌟' :
-               percentage >= 60 ? 'كويس! ممكن تتحسن أكتر 💪' :
-               'مش مشكلة، تعال نراجع الأخطاء 📚'}
+              {percentage >= 80
+                ? 'ممتاز! أداؤك رائع 🌟'
+                : percentage >= 60
+                ? 'كويس! ممكن تتحسن أكتر 💪'
+                : 'مش مشكلة، تعال نراجع الأخطاء 📚'}
             </p>
           </div>
 
@@ -130,7 +148,7 @@ export default function QuizScreen({ navigate, params }: NavProps) {
               </div>
               <ul className="text-right space-y-1.5">
                 {score < questions.length && (
-                  <li className="text-orange-700 text-sm font-medium">• راجع قانون حل المعادلات الخطية</li>
+                  <li className="text-orange-700 text-sm font-medium">• راجع نقاط ضعف الاختبار</li>
                 )}
                 <li className="text-orange-700 text-sm font-medium">• اتدرب على مزيد من الأمثلة</li>
                 <li className="text-orange-700 text-sm font-medium">• اسأل AI لو في نقطة مش واضحة</li>
@@ -141,16 +159,19 @@ export default function QuizScreen({ navigate, params }: NavProps) {
           {/* Action buttons */}
           <div className="flex flex-col gap-3">
             <button
-              onClick={() => navigate('mistakes')}
-              className="w-full py-4 rounded-2xl font-bold text-base"
+              onClick={() => navigate('/mistakes')}
+              className="w-full py-4 rounded-2xl font-bold text-base cursor-pointer active:scale-95 transition-transform"
               style={{ background: '#EFF6FF', color: '#1E6FF0', border: '1.5px solid #BFDBFE' }}
             >
               ارجع للأخطاء ❌
             </button>
-              <button
-                onClick={() => navigate('ai_lesson', { lesson, lessonId: params?.lessonId })}
-              className="w-full py-4 rounded-2xl text-white font-bold text-base"
-              style={{ background: 'linear-gradient(135deg, #1E6FF0, #7C3AED)', boxShadow: '0 8px 24px rgba(30,111,240,0.35)' }}
+            <button
+              onClick={() => navigate('/ai-lesson', { state: { lesson, lessonId } })}
+              className="w-full py-4 rounded-2xl text-white font-bold text-base cursor-pointer active:scale-95 transition-transform"
+              style={{
+                background: 'linear-gradient(135deg, #1E6FF0, #7C3AED)',
+                boxShadow: '0 8px 24px rgba(30,111,240,0.35)',
+              }}
             >
               العودة للدرس ←
             </button>
@@ -171,7 +192,10 @@ export default function QuizScreen({ navigate, params }: NavProps) {
           <div className="flex items-center gap-2 bg-white/20 rounded-xl px-3 py-1.5">
             <span className="text-white/80 text-xs font-semibold">🏆 +{score * 10}</span>
           </div>
-          <button onClick={() => navigate('home')} className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center">
+          <button
+            onClick={() => navigate('/home')}
+            className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+          >
             <span className="text-white font-bold">×</span>
           </button>
         </div>
@@ -191,12 +215,9 @@ export default function QuizScreen({ navigate, params }: NavProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 py-4">
+      <div className="flex-1 overflow-y-auto px-5 py-4 pb-24">
         {/* Question card */}
-        <div
-          className="bg-white rounded-2xl p-5 mb-4"
-          style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
-        >
+        <div className="bg-white rounded-2xl p-5 mb-4" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
           <p className="text-slate-900 font-black text-lg text-right leading-relaxed">{q.question}</p>
         </div>
 
@@ -223,8 +244,9 @@ export default function QuizScreen({ navigate, params }: NavProps) {
             return (
               <button
                 key={idx}
+                disabled={answered}
                 onClick={() => handleAnswer(idx)}
-                className="w-full py-4 px-5 rounded-2xl text-right font-bold text-base flex items-center justify-between active:scale-98 transition-all"
+                className="w-full py-4 px-5 rounded-2xl text-right font-bold text-base flex items-center justify-between transition-all cursor-pointer disabled:cursor-default active:scale-98"
                 style={btnStyle}
               >
                 <span style={{ color: textColor }}>
@@ -239,17 +261,14 @@ export default function QuizScreen({ navigate, params }: NavProps) {
         {/* Feedback */}
         {answered && (
           <div
-            className="rounded-2xl p-4 mb-4"
+            className="rounded-2xl p-4 mb-4 transition-all"
             style={{
               background: isCorrect ? '#F0FDF4' : '#FFF7ED',
               border: `1.5px solid ${isCorrect ? '#6EE7B7' : '#FDE68A'}`,
             }}
           >
             <div className="flex items-center gap-2 justify-end mb-2">
-              <div
-                className="font-black text-base"
-                style={{ color: isCorrect ? '#065F46' : '#92400E' }}
-              >
+              <div className="font-black text-base" style={{ color: isCorrect ? '#065F46' : '#92400E' }}>
                 {isCorrect ? 'إجابة صحيحة! ✓' : 'مش مشكلة! تعال نفهمها 🤔'}
               </div>
               <span className="text-2xl">{isCorrect ? '🎉' : '💪'}</span>
@@ -268,7 +287,7 @@ export default function QuizScreen({ navigate, params }: NavProps) {
         {answered && (
           <button
             onClick={handleNext}
-            className="w-full py-4 rounded-2xl text-white font-bold text-lg active:scale-95 transition-transform"
+            className="w-full py-4 rounded-2xl text-white font-bold text-lg cursor-pointer active:scale-95 transition-transform"
             style={{
               background: 'linear-gradient(135deg, #1E6FF0, #7C3AED)',
               boxShadow: '0 8px 24px rgba(30,111,240,0.4)',

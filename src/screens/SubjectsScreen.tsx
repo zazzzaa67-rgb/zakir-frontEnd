@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavProps } from '../App';
+import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { getStoredProfile, getSubjectsByTrack, Subject } from '../lib/api';
 
@@ -10,27 +10,40 @@ const subjectStyles = [
   ['🧪', '#D946EF', '#FDF4FF'], ['🧬', '#F59E0B', '#FFFBEB'],
 ] as const;
 
-export default function SubjectsScreen({ navigate }: NavProps) {
-  const profile = getStoredProfile();
+export default function SubjectsScreen() {
+  const navigate = useNavigate();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!profile?.track_id) {
-      setError('سجل دخولك علشان نعرض موادك الدراسية');
-      setLoading(false);
-      return;
-    }
-    getSubjectsByTrack(profile.track_id)
-      .then(setSubjects)
-      .catch((requestError) => setError(requestError.message))
-      .finally(() => setLoading(false));
-  }, [profile?.track_id]);
+    try {
+      const profile = getStoredProfile();
+      if (!profile?.track_id) {
+        setError('سجل دخولك علشان نعرض موادك الدراسية');
+        setLoading(false);
+        return;
+      }
 
-  const totalLessons = subjects.reduce((sum, subject) => sum + (subject.books ?? []).reduce(
-    (bookSum, book) => bookSum + (book.total_lessons_generated ?? 0), 0,
-  ), 0);
+      getSubjectsByTrack(profile.track_id)
+        .then((data) => {
+          setSubjects(data || []);
+        })
+        .catch((requestError) => {
+          setError(requestError?.message || 'حدث خطأ أثناء تحميل المواد');
+        })
+        .finally(() => setLoading(false));
+    } catch (err) {
+      setError('تعذر الحصول على بيانات المستخدم');
+      setLoading(false);
+    }
+  }, []);
+
+  const totalLessons = (subjects || []).reduce((sum, subject) => {
+    return sum + (subject.books ?? []).reduce(
+      (bookSum, book) => bookSum + (book.total_lessons_generated ?? 0), 0
+    );
+  }, 0);
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
@@ -40,7 +53,9 @@ export default function SubjectsScreen({ navigate }: NavProps) {
         style={{ background: 'linear-gradient(160deg, #1E6FF0 0%, #0D4FB5 100%)' }}
       >
         <h1 className="text-2xl font-black text-white text-right">المواد الدراسية</h1>
-        <p className="text-blue-200 text-sm font-medium mt-1 text-right">مواد مسارك الدراسي • {subjects.length} مواد</p>
+        <p className="text-blue-200 text-sm font-medium mt-1 text-right">
+          مواد مسارك الدراسي • {subjects.length} مواد
+        </p>
       </div>
 
       {/* Grid */}
@@ -63,56 +78,68 @@ export default function SubjectsScreen({ navigate }: NavProps) {
 
         {loading && <div className="text-center text-slate-500 py-10">جاري تحميل المواد...</div>}
         {error && <div className="text-center text-red-500 py-10">{error}</div>}
-        {!loading && !error && subjects.length === 0 && <div className="text-center text-slate-500 py-10">لا توجد مواد مرتبطة بمسارك حاليا</div>}
+        {!loading && !error && subjects.length === 0 && (
+          <div className="text-center text-slate-500 py-10">لا توجد مواد مرتبطة بمسارك حاليا</div>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           {subjects.map((subject, index) => {
             const [icon, color, bg] = subjectStyles[index % subjectStyles.length];
-            const total = (subject.books ?? []).reduce((sum, book) => sum + (book.total_lessons_generated ?? 0), 0);
+            const total = (subject.books ?? []).reduce(
+              (sum, book) => sum + (book.total_lessons_generated ?? 0), 0
+            );
+
             return (
-            <button
-              key={subject.id}
-              onClick={() => navigate('lesson_list', { subject: subject.title, subjectId: subject.id, icon })}
-              className="rounded-2xl p-4 text-right active:scale-95 transition-transform"
-              style={{
-                background: 'white',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-              }}
-            >
-              {/* Icon */}
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-3 mr-auto"
-                style={{ background: bg }}
+              <button
+                key={subject.id}
+                onClick={() =>
+                  navigate('/lesson-list', {
+                    state: { subject: subject.title, subjectId: subject.id, icon },
+                  })
+                }
+                className="rounded-2xl p-4 text-right active:scale-95 transition-transform cursor-pointer"
+                style={{
+                  background: 'white',
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                }}
               >
-                {icon}
-              </div>
-
-              {/* Subject name */}
-              <div className="font-black text-slate-900 text-sm leading-tight mb-1">{subject.title}</div>
-
-              {/* Progress label */}
-              <div className="font-bold text-xs mb-2" style={{ color }}>
-                {total ? 'متاح للمذاكرة' : 'قريبا'}
-              </div>
-
-              {/* Progress bar */}
-              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2">
+                {/* Icon */}
                 <div
-                  className="h-full rounded-full transition-all"
-                  style={{ width: total ? '100%' : '0%', background: color }}
-                />
-              </div>
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-3 mr-auto"
+                  style={{ background: bg }}
+                >
+                  {icon}
+                </div>
 
-              {/* Lessons count */}
-              <div className="text-xs text-slate-400 font-medium">
-                {total} درس
-              </div>
-            </button>
+                {/* Subject name */}
+                <div className="font-black text-slate-900 text-sm leading-tight mb-1">
+                  {subject.title}
+                </div>
+
+                {/* Progress label */}
+                <div className="font-bold text-xs mb-2" style={{ color }}>
+                  {total ? 'متاح للمذاكرة' : 'قريبا'}
+                </div>
+
+                {/* Progress bar */}
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: total ? '100%' : '0%', background: color }}
+                  />
+                </div>
+
+                {/* Lessons count */}
+                <div className="text-xs text-slate-400 font-medium">
+                  {total} درس
+                </div>
+              </button>
             );
           })}
         </div>
       </div>
 
-      <BottomNav active="subjects" navigate={navigate} />
+      <BottomNav active="subjects" />
     </div>
   );
 }

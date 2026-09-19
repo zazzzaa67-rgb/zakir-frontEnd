@@ -1,4 +1,4 @@
-import { NavProps } from '../App';
+import { useNavigate, useNavigation } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 
 const menuItems = [
@@ -11,7 +11,8 @@ const menuItems = [
   { icon: '📊', label: 'الإحصائيات المتقدمة', screen: 'pro_dashboard' as const },
 ];
 
-export default function ProfileScreen({ navigate }: NavProps) {
+export default function ProfileScreen() {
+  const navigate = useNavigate()
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
       <div className="flex-1 overflow-y-auto pb-24">
@@ -174,7 +175,7 @@ export default function ProfileScreen({ navigate }: NavProps) {
         </div>
       </div>
 
-      <BottomNav active="profile" navigate={navigate} />
+      <BottomNav active="profile"  />
     </div>
   );
 }

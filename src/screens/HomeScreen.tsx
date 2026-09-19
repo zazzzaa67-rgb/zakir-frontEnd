@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavProps } from '../App';
+import {useNavigate} from 'react-router-dom'
 import BottomNav from '../components/BottomNav';
 import { getLeaderboard, getStoredProfile, getTeam } from '../lib/api';
 
@@ -12,7 +12,8 @@ const quickActions = [
   { icon: '❌', label: 'أخطائي', screen: 'mistakes' as const, color: '#FEFCE8', iconBg: '#EAB308' },
 ];
 
-export default function HomeScreen({ navigate }: NavProps) {
+export default function HomeScreen() {
+  const navigate = useNavigate()
   const profile = getStoredProfile();
   const firstName = profile?.display_name?.split(' ')[0] || 'يا بطل';
   const [team, setTeam] = useState<any>(null);
@@ -284,8 +285,7 @@ export default function HomeScreen({ navigate }: NavProps) {
           </div>
         </div>
       </div>
-
-      <BottomNav active="home" navigate={navigate} />
+      <BottomNav active="home"/>
     </div>
   );
 }

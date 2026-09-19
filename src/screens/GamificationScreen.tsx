@@ -1,4 +1,4 @@
-import { NavProps } from '../App';
+import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 
 const achievements = [
@@ -23,7 +23,8 @@ const leaderboard = [
 const rankColors: Record<number, string> = { 1: '#F59E0B', 2: '#94A3B8', 3: '#CD7C2F' };
 const rankBg: Record<number, string> = { 1: '#FFFBEB', 2: '#F8FAFC', 3: '#FFF7ED' };
 
-export default function GamificationScreen({ navigate }: NavProps) {
+export default function GamificationScreen() {
+  const navigate = useNavigate();
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
       <div className="flex-1 overflow-y-auto pb-24">
@@ -185,7 +186,7 @@ export default function GamificationScreen({ navigate }: NavProps) {
         </div>
       </div>
 
-      <BottomNav active="gamification" navigate={navigate} />
+      <BottomNav active="gamification"/>
     </div>
   );
 }

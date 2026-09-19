@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavProps } from '../App';
+import { useNavigate, useLocation } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { askLessonAI, getLessonById, LessonDetails } from '../lib/api';
 
@@ -15,9 +15,13 @@ const aiMessages = [
   "فهمت الجزئية دي؟",
 ];
 
-export default function AILessonScreen({ navigate, params }: NavProps) {
-  const lesson = (params?.lesson as string) || 'المعادلات الخطية';
-  const lessonId = params?.lessonId as string | undefined;
+export default function AILessonScreen() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const params = location.state as { lesson?: string; lessonId?: string } | null;
+
+  const lesson = params?.lesson || 'المعادلات الخطية';
+  const lessonId = params?.lessonId;
   const [lessonDetails, setLessonDetails] = useState<LessonDetails | null>(null);
   const [userInput, setUserInput] = useState('');
   const [messages, setMessages] = useState(aiMessages);
@@ -36,12 +40,16 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
       else setChatError('مذكرة PDF لهذا الدرس غير متاحة حاليا');
       return;
     }
-    navigate(mode.screen, {
-      lessonId,
-      lesson,
-      questions: mode.screen === 'homework'
-        ? lessonDetails?.content_json.homework ?? lessonDetails?.content_json.quiz
-        : lessonDetails?.content_json.exam ?? lessonDetails?.content_json.quiz,
+
+    const path = mode.screen === 'homework' ? '/homework' : '/quiz';
+    navigate(path, {
+      state: {
+        lessonId,
+        lesson,
+        questions: mode.screen === 'homework'
+          ? lessonDetails?.content_json.homework ?? lessonDetails?.content_json.quiz
+          : lessonDetails?.content_json.exam ?? lessonDetails?.content_json.quiz,
+      },
     });
   };
 
@@ -53,7 +61,7 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
     }
     const message = userInput.trim();
     const history = messages.map((item) => ({
-      role: item.startsWith('أنت:') ? 'user' as const : 'model' as const,
+      role: item.startsWith('أنت:') ? ('user' as const) : ('model' as const),
       text: item.replace(/^أنت:\s*/, ''),
     }));
     setMessages((current) => [...current, `أنت: ${message}`]);
@@ -90,7 +98,10 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
               </button>
             ))}
           </div>
-          <button onClick={() => navigate('lesson_list')} className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center">
+          <button
+            onClick={() => navigate('/lesson-list')}
+            className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center cursor-pointer"
+          >
             <span className="text-white font-bold">→</span>
           </button>
         </div>
@@ -134,7 +145,7 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
             <button
               key={m.label}
               onClick={() => openMode(m)}
-              className="bg-white rounded-2xl p-3 flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
+              className="bg-white rounded-2xl p-3 flex flex-col items-center gap-1.5 active:scale-95 transition-transform cursor-pointer"
               style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
             >
               <span className="text-2xl">{m.icon}</span>
@@ -142,7 +153,11 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
             </button>
           ))}
         </div>
-        {chatError && <div className="mb-4 rounded-2xl border border-red-100 bg-red-50 p-3 text-right text-sm font-bold text-red-600">{chatError}</div>}
+        {chatError && (
+          <div className="mb-4 rounded-2xl border border-red-100 bg-red-50 p-3 text-right text-sm font-bold text-red-600">
+            {chatError}
+          </div>
+        )}
       </div>
 
       {/* Chat area */}
@@ -190,7 +205,7 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
               <button
                 key={btn.label}
                 onClick={btn.action}
-                className="px-4 py-2 rounded-xl text-sm font-bold active:scale-95 transition-transform"
+                className="px-4 py-2 rounded-xl text-sm font-bold active:scale-95 transition-transform cursor-pointer"
                 style={{
                   background: 'white',
                   color: '#1E6FF0',
@@ -211,8 +226,12 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
           <button
             onClick={() => void handleSend()}
             disabled={chatLoading || !userInput.trim()}
-            className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform"
-            style={{ background: 'linear-gradient(135deg, #1E6FF0, #7C3AED)', color: 'white', opacity: chatLoading || !userInput.trim() ? 0.5 : 1 }}
+            className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+            style={{
+              background: 'linear-gradient(135deg, #1E6FF0, #7C3AED)',
+              color: 'white',
+              opacity: chatLoading || !userInput.trim() ? 0.5 : 1,
+            }}
           >
             ↑
           </button>
@@ -225,10 +244,12 @@ export default function AILessonScreen({ navigate, params }: NavProps) {
             style={{ fontFamily: 'Cairo, sans-serif' }}
           />
         </div>
-        {chatLoading && <p className="mt-2 text-right text-xs font-bold text-blue-600">مساعد الدرس بيجهز الإجابة...</p>}
+        {chatLoading && (
+          <p className="mt-2 text-right text-xs font-bold text-blue-600">مساعد الدرس بيجهز الإجابة...</p>
+        )}
       </div>
 
-      <BottomNav active="ai_lesson" navigate={navigate} />
+      <BottomNav active="ai_lesson" />
     </div>
   );
 }

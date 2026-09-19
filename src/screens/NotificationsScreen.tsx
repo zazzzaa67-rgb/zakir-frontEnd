@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { NavProps } from '../App';
-
+import {useNavigate } from 'react-router-dom'
 const notifications = [
   {
     id: 1,
@@ -70,7 +69,8 @@ const notifications = [
   },
 ];
 
-export default function NotificationsScreen({ navigate }: NavProps) {
+export default function NotificationsScreen() {
+  const navigate = useNavigate()
   const [items, setItems] = useState(notifications);
   const unread = items.filter((n) => !n.read).length;
 
