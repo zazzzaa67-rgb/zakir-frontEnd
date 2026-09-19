@@ -116,7 +116,6 @@ async function requestOnce<T>(path: string, options: RequestInit = {}): Promise<
     },
   });
 }
-
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   let response = await requestOnce(path, options);
   if (response.status === 401 && !path.startsWith('/auth/')) {
@@ -124,16 +123,17 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     if (profile) response = await requestOnce(path, options);
   }
   const responseText = await response.text();
-  let body: { error?: string } = {};
+  let body: any = {};
   try {
     body = responseText ? JSON.parse(responseText) : {};
   } catch {
     body = {};
   }
-  if (!response.ok) throw new Error(body.error ?? (responseText.trim() || `حصل خطأ من السيرفر (${response.status})`));
+  if (!response.ok) {
+    throw new Error(body.error ?? (responseText.trim() || `حصل خطأ من السيرفر (${response.status})`));
+  }
   return body as T;
 }
-
 export async function signIn(email: string, password: string) {
   const result = await request<{ accessToken: string; refreshToken: string; profile: StudentProfile }>('/auth/signin', {
     method: 'POST', body: JSON.stringify({ email, password }),
@@ -154,16 +154,23 @@ export async function signUp(payload: { email: string; password: string; display
 
 export async function getSubjectsByTrack(trackId: string) {
   if (!trackId || trackId === 'undefined' || trackId === 'null') {
-    console.error('getSubjectsByTrack: trackId is missing or invalid');
+    console.error('❌ track_id غير صحيح أو غير موجود:', trackId);
     return [];
   }
-  
+
   try {
-    const data = await request<Subject[]>(`/subjects?track_id=${encodeURIComponent(trackId)}`);
-    return Array.isArray(data) ? data : [];
-  } catch (err) {
-    console.error('Error fetching subjects:', err);
+    const result = await request<Subject[]>(`/subjects?track_id=${encodeURIComponent(trackId)}`);
+    
+    // طباعة البيانات في الـ Console لمعاينتها أثناء التشغيل
+    console.log('✅ المواد المستقبلة من السيرفر:', result);
+
+    if (Array.isArray(result)) {
+      return result;
+    }
     return [];
+  } catch (error) {
+    console.error('❌ خطأ أثناء جلب المواد:', error);
+    throw error;
   }
 }
 export async function getLessonsBySubject(subjectId: string, trackId?: string) {
