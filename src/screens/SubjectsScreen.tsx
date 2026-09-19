@@ -93,8 +93,8 @@ export default function SubjectsScreen() {
               <button
                 key={subject.id}
                 onClick={() =>
-                  navigate('/lesson-list', {
-                    state: { subject: subject.title, subjectId: subject.id, icon },
+                  navigate(`/lesson-list/${subject.id}`, {
+                    state: { subject: subject.title, icon },
                   })
                 }
                 className="rounded-2xl p-4 text-right active:scale-95 transition-transform cursor-pointer"

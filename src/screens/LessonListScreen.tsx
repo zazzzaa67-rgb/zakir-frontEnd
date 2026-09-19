@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ApiLesson, getLessonsBySubject, getStoredProfile } from '../lib/api';
 
 type LessonStatus = 'completed' | 'in_progress' | 'available' | 'locked';
@@ -25,23 +25,6 @@ const mockUnits: { title: string; subtitle: string; lessons: Lesson[] }[] = [
       { id: 3, title: 'الدوال', difficulty: 'صعب', time: '35 دقيقة', points: 40, status: 'available' },
     ],
   },
-  {
-    title: 'الوحدة الثانية',
-    subtitle: 'الهندسة',
-    lessons: [
-      { id: 4, title: 'المثلثات', difficulty: 'سهل', time: '15 دقيقة', points: 20, coinCost: 15, status: 'locked' },
-      { id: 5, title: 'الدوائر', difficulty: 'متوسط', time: '25 دقيقة', points: 30, coinCost: 15, status: 'locked' },
-      { id: 6, title: 'الأشكال الرباعية', difficulty: 'سهل', time: '18 دقيقة', points: 20, coinCost: 15, status: 'locked' },
-    ],
-  },
-  {
-    title: 'الوحدة الثالثة',
-    subtitle: 'الإحصاء',
-    lessons: [
-      { id: 7, title: 'التوزيعات', difficulty: 'صعب', time: '40 دقيقة', points: 50, coinCost: 20, status: 'locked' },
-      { id: 8, title: 'الاحتمالات', difficulty: 'صعب', time: '35 دقيقة', points: 45, coinCost: 20, status: 'locked' },
-    ],
-  },
 ];
 
 const statusConfig: Record<LessonStatus, { label: string; color: string; bg: string }> = {
@@ -60,9 +43,11 @@ const difficultyColor: Record<string, string> = {
 export default function LessonListScreen() {
   const { subjectId } = useParams<{ subjectId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const subject = 'الرياضيات';
-  const icon = '📐';
+  // جلب اسم المادة والأيقونة ديناميكياً من المادة المحددة
+  const { subject = 'المادة الدراسية', icon = '📚' } = (location.state as { subject?: string; icon?: string }) || {};
+
   const profile = getStoredProfile();
   const [lessons, setLessons] = useState<ApiLesson[]>([]);
   const [loading, setLoading] = useState(Boolean(subjectId));
@@ -84,15 +69,15 @@ export default function LessonListScreen() {
     const grouped = new Map<string, Lesson[]>();
     
     lessons.forEach((lesson) => {
+      const item = lesson as any;
       const unitTitle = lesson.unit_title || lesson.chapter_name || 'دروس متنوعة';
       const current = grouped.get(unitTitle) ?? [];
       
-      // تحديد حالة الدرس بشكل أفضل بمرونة
       let status: LessonStatus = 'available';
-      if (lesson.is_unlocked === false) {
+      if (item.is_unlocked === false) {
         status = 'locked';
-      } else if (lesson.status) {
-        status = lesson.status as LessonStatus;
+      } else if (item.status) {
+        status = item.status as LessonStatus;
       }
 
       grouped.set(unitTitle, [
@@ -138,9 +123,9 @@ export default function LessonListScreen() {
         <h1 className="text-2xl font-black text-white">{subject}</h1>
         
         <div className="flex items-center gap-2 mt-2 justify-start">
-          <div className="text-white text-sm font-bold">68%</div>
+          <div className="text-white text-sm font-bold">0%</div>
           <div className="w-24 h-1.5 bg-white/20 rounded-full overflow-hidden">
-            <div className="h-full bg-white rounded-full" style={{ width: '68%' }} />
+            <div className="h-full bg-white rounded-full" style={{ width: '0%' }} />
           </div>
           <div className="text-blue-200 text-sm font-medium">{totalLessonsCount} درس</div>
         </div>
@@ -185,9 +170,7 @@ export default function LessonListScreen() {
                     className={`bg-white rounded-2xl p-4 flex items-center gap-3 text-right transition-transform ${
                       isLocked ? 'cursor-not-allowed opacity-80' : 'cursor-pointer active:scale-98'
                     }`}
-                    style={{
-                      boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-                    }}
+                    style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}
                   >
                     {/* Status icon */}
                     <div
