@@ -1,7 +1,6 @@
-const configuredApiUrl = import.meta.env.VITE_API_URL ?? 'https://zakir-backend.vercel.app/api';
-const API_URL = configuredApiUrl.replace(/\/$/, '').endsWith('/api')
-  ? configuredApiUrl.replace(/\/$/, '')
-  : `${configuredApiUrl.replace(/\/$/, '')}/api`;
+const rawUrl = (import.meta.env.VITE_API_URL ?? 'https://zakir-backend.vercel.app/api').replace(/\/$/, '');
+const API_URL = rawUrl.endsWith('/api') ? rawUrl : `${rawUrl}/api`;
+
 
 export type StudentProfile = {
   id: string;
