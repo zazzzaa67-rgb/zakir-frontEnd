@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
-import { getStoredProfile, getSubjectsByTrack, restoreSession, Subject } from '../lib/api';
+import { getStoredProfile, getSubjectsByTrack, Subject } from '../lib/api';
 
 const subjectStyles = [
   ['📐', '#1E6FF0', '#EFF6FF'], ['🔬', '#10B981', '#F0FDF4'],
@@ -15,46 +15,47 @@ export default function SubjectsScreen() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // منع الاستدعاءات المتكررة عند الـ StrictMode
+  const isFetchingRef = useRef(false);
 
-  const fetchSubjects = useCallback(async () => {
+  const fetchSubjects = async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     try {
       setLoading(true);
       setError('');
 
-      // 1. محاولة جلب البروفايل المخزن
-      let profile = getStoredProfile();
-
-      // 2. إذا لم يكن موجوداً، نحاول تجديد الجلسة
-      if (!profile) {
-        profile = await restoreSession();
-      }
-
+      const profile = getStoredProfile();
       if (!profile?.track_id) {
-        setError('يرجى تسجيل الدخول وعرض المواد الدراسية الخاصة بمسارك.');
+        setError('يرجى تسجيل الدخول واختيار المسار الدراسي');
         setLoading(false);
+        isFetchingRef.current = false;
         return;
       }
 
-      // 3. جلب المواد من السيرفر
       const data = await getSubjectsByTrack(profile.track_id);
 
+      // الشرط الأهم: لا نحدّث الـ state إلا إذا كانت البيانات القادمة تحتوي على مواد فعلاً
       if (Array.isArray(data) && data.length > 0) {
         setSubjects(data);
       } else {
-        // عدم مسح البيانات السابقة إن كانت توجد مواد محملة من قبل
+        // إذا رجعت فارغة ولكن لدينا مواد سابقة، نحتفظ بالقديم
         setSubjects((prev) => (prev.length > 0 ? prev : []));
       }
     } catch (err: any) {
-      console.error('Fetch Subjects Error:', err);
-      setError(err?.message || 'حدث خطأ أثناء اتصالك بالسيرفر، يرجى المحاولة مرة أخرى.');
+      console.error('Fetch error:', err);
+      setError('تعذر الاتصال بالسيرفر، يرجى المحاولة لاحقاً');
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchSubjects();
-  }, [fetchSubjects]);
+  }, []);
 
   const totalLessons = subjects.reduce((sum, subject) => {
     return (
@@ -79,74 +80,68 @@ export default function SubjectsScreen() {
         </p>
       </div>
 
-      {/* Content Area */}
+      {/* Main Container */}
       <div className="flex-1 overflow-y-auto p-5 pb-24">
         {/* Stats row */}
         <div className="flex gap-3 mb-5">
-          <div
-            className="flex-1 bg-white rounded-2xl p-4 text-center"
-            style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}
-          >
+          <div className="flex-1 bg-white rounded-2xl p-4 text-center" style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
             <div className="text-2xl font-black text-slate-900">0</div>
             <div className="text-xs text-slate-500 font-medium mt-0.5">درس مكتمل</div>
           </div>
-          <div
-            className="flex-1 bg-white rounded-2xl p-4 text-center"
-            style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}
-          >
+          <div className="flex-1 bg-white rounded-2xl p-4 text-center" style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
             <div className="text-2xl font-black text-blue-600">0%</div>
             <div className="text-xs text-slate-500 font-medium mt-0.5">متوسط التقدم</div>
           </div>
-          <div
-            className="flex-1 bg-white rounded-2xl p-4 text-center"
-            style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}
-          >
+          <div className="flex-1 bg-white rounded-2xl p-4 text-center" style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
             <div className="text-2xl font-black text-amber-500">{totalLessons}</div>
             <div className="text-xs text-slate-500 font-medium mt-0.5">درس متبقي</div>
           </div>
         </div>
 
-        {/* Loading State */}
+        {/* Loading */}
         {loading && subjects.length === 0 && (
-          <div className="text-center text-slate-500 py-12 font-bold">
-            جاري تحميل المواد من السيرفر...
-          </div>
+          <div className="text-center text-slate-500 py-10 font-bold">جاري تحميل المواد...</div>
         )}
 
-        {/* Error State */}
+        {/* Error */}
         {error && subjects.length === 0 && (
           <div className="text-center py-10 flex flex-col items-center gap-3">
             <span className="text-red-500 font-bold">{error}</span>
             <button
-              onClick={fetchSubjects}
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all cursor-pointer"
+              onClick={() => {
+                isFetchingRef.current = false;
+                fetchSubjects();
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold cursor-pointer"
             >
               إعادة المحاولة 🔄
             </button>
           </div>
         )}
 
-        {/* Empty State */}
+        {/* Empty */}
         {!loading && !error && subjects.length === 0 && (
           <div className="text-center py-10 flex flex-col items-center gap-3">
             <span className="text-slate-500 font-bold">لا توجد مواد مرتبطة بمسارك حاليا</span>
             <button
-              onClick={fetchSubjects}
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all cursor-pointer"
+              onClick={() => {
+                isFetchingRef.current = false;
+                fetchSubjects();
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold cursor-pointer"
             >
               تحديث الصفحة 🔄
             </button>
           </div>
         )}
 
-        {/* Subjects Grid */}
+        {/* Subjects List */}
         {subjects.length > 0 && (
           <div className="grid grid-cols-2 gap-3">
             {subjects.map((subject, index) => {
               const [icon, color, bg] = subjectStyles[index % subjectStyles.length];
               const total = (subject.books ?? []).reduce(
-                (sum, book) => sum + (book.total_lessons_generated ?? 0),
-                0
+                (sum, book) => sum + (book.total_lessons_generated ?? 0), 0
               );
 
               return (
@@ -185,7 +180,9 @@ export default function SubjectsScreen() {
                     />
                   </div>
 
-                  <div className="text-xs text-slate-400 font-medium">{total} درس</div>
+                  <div className="text-xs text-slate-400 font-medium">
+                    {total} درس
+                  </div>
                 </button>
               );
             })}
