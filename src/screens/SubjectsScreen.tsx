@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
-import { getStoredProfile, getSubjectsByTrack, Subject } from '../lib/api';
+import { getStoredProfile, getSubjectsByTrack, restoreSession, Subject } from '../lib/api';
 
 const subjectStyles = [
   ['📐', '#1E6FF0', '#EFF6FF'], ['🔬', '#10B981', '#F0FDF4'],
@@ -16,41 +16,53 @@ export default function SubjectsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const fetchSubjects = async () => {
+  const fetchSubjects = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
 
-      const profile = getStoredProfile();
+      // 1. محاولة جلب البروفايل المخزن
+      let profile = getStoredProfile();
 
-      if (!profile || !profile.track_id) {
-        setError('يرجى اختيار المسار الدراسي أولاً لعرض المواد');
+      // 2. إذا لم يكن موجوداً، نحاول تجديد الجلسة
+      if (!profile) {
+        profile = await restoreSession();
+      }
+
+      if (!profile?.track_id) {
+        setError('يرجى تسجيل الدخول وعرض المواد الدراسية الخاصة بمسارك.');
         setLoading(false);
         return;
       }
 
+      // 3. جلب المواد من السيرفر
       const data = await getSubjectsByTrack(profile.track_id);
-      
-      if (!data || data.length === 0) {
-        // إذا كان الـ API يرجع مصفوفة فارغة
-        setSubjects([]);
-      } else {
+
+      if (Array.isArray(data) && data.length > 0) {
         setSubjects(data);
+      } else {
+        // عدم مسح البيانات السابقة إن كانت توجد مواد محملة من قبل
+        setSubjects((prev) => (prev.length > 0 ? prev : []));
       }
-    } catch (requestError: any) {
-      setError(requestError?.message || 'حدث خطأ أثناء تحميل المواد');
+    } catch (err: any) {
+      console.error('Fetch Subjects Error:', err);
+      setError(err?.message || 'حدث خطأ أثناء اتصالك بالسيرفر، يرجى المحاولة مرة أخرى.');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchSubjects();
-  }, []);
+  }, [fetchSubjects]);
 
-  const totalLessons = (subjects || []).reduce((sum, subject) => {
-    return sum + (subject.books ?? []).reduce(
-      (bookSum, book) => bookSum + (book.total_lessons_generated ?? 0), 0
+  const totalLessons = subjects.reduce((sum, subject) => {
+    return (
+      sum +
+      (subject.books ?? []).reduce(
+        (bookSum, book) => bookSum + (book.total_lessons_generated ?? 0),
+        0
+      )
     );
   }, 0);
 
@@ -67,60 +79,74 @@ export default function SubjectsScreen() {
         </p>
       </div>
 
-      {/* Grid */}
+      {/* Content Area */}
       <div className="flex-1 overflow-y-auto p-5 pb-24">
         {/* Stats row */}
         <div className="flex gap-3 mb-5">
-          <div className="flex-1 bg-white rounded-2xl p-4 text-center" style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+          <div
+            className="flex-1 bg-white rounded-2xl p-4 text-center"
+            style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}
+          >
             <div className="text-2xl font-black text-slate-900">0</div>
             <div className="text-xs text-slate-500 font-medium mt-0.5">درس مكتمل</div>
           </div>
-          <div className="flex-1 bg-white rounded-2xl p-4 text-center" style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+          <div
+            className="flex-1 bg-white rounded-2xl p-4 text-center"
+            style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}
+          >
             <div className="text-2xl font-black text-blue-600">0%</div>
             <div className="text-xs text-slate-500 font-medium mt-0.5">متوسط التقدم</div>
           </div>
-          <div className="flex-1 bg-white rounded-2xl p-4 text-center" style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+          <div
+            className="flex-1 bg-white rounded-2xl p-4 text-center"
+            style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}
+          >
             <div className="text-2xl font-black text-amber-500">{totalLessons}</div>
             <div className="text-xs text-slate-500 font-medium mt-0.5">درس متبقي</div>
           </div>
         </div>
 
-        {loading && (
-          <div className="text-center text-slate-500 py-10 font-bold">
-            جاري تحميل المواد...
+        {/* Loading State */}
+        {loading && subjects.length === 0 && (
+          <div className="text-center text-slate-500 py-12 font-bold">
+            جاري تحميل المواد من السيرفر...
           </div>
         )}
 
-        {error && (
-          <div className="text-center text-red-500 py-10 font-bold flex flex-col items-center gap-3">
-            <span>{error}</span>
-            <button 
+        {/* Error State */}
+        {error && subjects.length === 0 && (
+          <div className="text-center py-10 flex flex-col items-center gap-3">
+            <span className="text-red-500 font-bold">{error}</span>
+            <button
               onClick={fetchSubjects}
-              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold"
+              className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all cursor-pointer"
             >
               إعادة المحاولة 🔄
             </button>
           </div>
         )}
 
+        {/* Empty State */}
         {!loading && !error && subjects.length === 0 && (
-          <div className="text-center text-slate-500 py-10 font-bold flex flex-col items-center gap-3">
-            <span>لا توجد مواد مرتبطة بمسارك حاليا</span>
-            <button 
+          <div className="text-center py-10 flex flex-col items-center gap-3">
+            <span className="text-slate-500 font-bold">لا توجد مواد مرتبطة بمسارك حاليا</span>
+            <button
               onClick={fetchSubjects}
-              className="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl text-xs font-bold"
+              className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all cursor-pointer"
             >
               تحديث الصفحة 🔄
             </button>
           </div>
         )}
 
-        {!loading && !error && subjects.length > 0 && (
+        {/* Subjects Grid */}
+        {subjects.length > 0 && (
           <div className="grid grid-cols-2 gap-3">
             {subjects.map((subject, index) => {
               const [icon, color, bg] = subjectStyles[index % subjectStyles.length];
               const total = (subject.books ?? []).reduce(
-                (sum, book) => sum + (book.total_lessons_generated ?? 0), 0
+                (sum, book) => sum + (book.total_lessons_generated ?? 0),
+                0
               );
 
               return (
@@ -159,9 +185,7 @@ export default function SubjectsScreen() {
                     />
                   </div>
 
-                  <div className="text-xs text-slate-400 font-medium">
-                    {total} درس
-                  </div>
+                  <div className="text-xs text-slate-400 font-medium">{total} درس</div>
                 </button>
               );
             })}

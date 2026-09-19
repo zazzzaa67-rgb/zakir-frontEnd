@@ -151,9 +151,15 @@ export async function signUp(payload: { email: string; password: string; display
 }
 
 export async function getSubjectsByTrack(trackId: string) {
-  return request<Subject[]>(`/subjects?track_id=${encodeURIComponent(trackId)}`);
+  if (!trackId) return [];
+  try {
+    return await request<Subject[]>(`/subjects?track_id=${encodeURIComponent(trackId)}`);
+  } catch (error) {
+    console.error('Retrying getSubjectsByTrack...', error);
+    // إعادة محاولة واحدة في حالة التأخير أو انتهاء الجلسة
+    return await request<Subject[]>(`/subjects?track_id=${encodeURIComponent(trackId)}`);
+  }
 }
-
 export async function getLessonsBySubject(subjectId: string, trackId?: string) {
   const query = new URLSearchParams({ subject_id: subjectId });
   if (trackId) query.set('track_id', trackId);
