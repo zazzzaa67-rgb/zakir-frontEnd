@@ -16,27 +16,36 @@ export default function SubjectsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  const fetchSubjects = async () => {
     try {
+      setLoading(true);
+      setError('');
+
       const profile = getStoredProfile();
-      if (!profile?.track_id) {
-        setError('سجل دخولك علشان نعرض موادك الدراسية');
+
+      if (!profile || !profile.track_id) {
+        setError('يرجى اختيار المسار الدراسي أولاً لعرض المواد');
         setLoading(false);
         return;
       }
 
-      getSubjectsByTrack(profile.track_id)
-        .then((data) => {
-          setSubjects(data || []);
-        })
-        .catch((requestError) => {
-          setError(requestError?.message || 'حدث خطأ أثناء تحميل المواد');
-        })
-        .finally(() => setLoading(false));
-    } catch (err) {
-      setError('تعذر الحصول على بيانات المستخدم');
+      const data = await getSubjectsByTrack(profile.track_id);
+      
+      if (!data || data.length === 0) {
+        // إذا كان الـ API يرجع مصفوفة فارغة
+        setSubjects([]);
+      } else {
+        setSubjects(data);
+      }
+    } catch (requestError: any) {
+      setError(requestError?.message || 'حدث خطأ أثناء تحميل المواد');
+    } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchSubjects();
   }, []);
 
   const totalLessons = (subjects || []).reduce((sum, subject) => {
@@ -46,7 +55,7 @@ export default function SubjectsScreen() {
   }, 0);
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
+    <div className="w-full h-full flex flex-col bg-[#F0F4FF]" dir="rtl">
       {/* Header */}
       <div
         className="px-5 pt-12 pb-5"
@@ -76,67 +85,88 @@ export default function SubjectsScreen() {
           </div>
         </div>
 
-        {loading && <div className="text-center text-slate-500 py-10">جاري تحميل المواد...</div>}
-        {error && <div className="text-center text-red-500 py-10">{error}</div>}
-        {!loading && !error && subjects.length === 0 && (
-          <div className="text-center text-slate-500 py-10">لا توجد مواد مرتبطة بمسارك حاليا</div>
+        {loading && (
+          <div className="text-center text-slate-500 py-10 font-bold">
+            جاري تحميل المواد...
+          </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          {subjects.map((subject, index) => {
-            const [icon, color, bg] = subjectStyles[index % subjectStyles.length];
-            const total = (subject.books ?? []).reduce(
-              (sum, book) => sum + (book.total_lessons_generated ?? 0), 0
-            );
+        {error && (
+          <div className="text-center text-red-500 py-10 font-bold flex flex-col items-center gap-3">
+            <span>{error}</span>
+            <button 
+              onClick={fetchSubjects}
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold"
+            >
+              إعادة المحاولة 🔄
+            </button>
+          </div>
+        )}
 
-            return (
-              <button
-                key={subject.id}
-                onClick={() =>
-                  navigate(`/lesson-list/${subject.id}`, {
-                    state: { subject: subject.title, icon },
-                  })
-                }
-                className="rounded-2xl p-4 text-right active:scale-95 transition-transform cursor-pointer"
-                style={{
-                  background: 'white',
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-                }}
-              >
-                {/* Icon */}
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-3 mr-auto"
-                  style={{ background: bg }}
+        {!loading && !error && subjects.length === 0 && (
+          <div className="text-center text-slate-500 py-10 font-bold flex flex-col items-center gap-3">
+            <span>لا توجد مواد مرتبطة بمسارك حاليا</span>
+            <button 
+              onClick={fetchSubjects}
+              className="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl text-xs font-bold"
+            >
+              تحديث الصفحة 🔄
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && subjects.length > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            {subjects.map((subject, index) => {
+              const [icon, color, bg] = subjectStyles[index % subjectStyles.length];
+              const total = (subject.books ?? []).reduce(
+                (sum, book) => sum + (book.total_lessons_generated ?? 0), 0
+              );
+
+              return (
+                <button
+                  key={subject.id}
+                  onClick={() =>
+                    navigate(`/lesson-list/${subject.id}`, {
+                      state: { subject: subject.title, icon },
+                    })
+                  }
+                  className="rounded-2xl p-4 text-right active:scale-95 transition-transform cursor-pointer"
+                  style={{
+                    background: 'white',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                  }}
                 >
-                  {icon}
-                </div>
-
-                {/* Subject name */}
-                <div className="font-black text-slate-900 text-sm leading-tight mb-1">
-                  {subject.title}
-                </div>
-
-                {/* Progress label */}
-                <div className="font-bold text-xs mb-2" style={{ color }}>
-                  {total ? 'متاح للمذاكرة' : 'قريبا'}
-                </div>
-
-                {/* Progress bar */}
-                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2">
                   <div
-                    className="h-full rounded-full transition-all"
-                    style={{ width: total ? '100%' : '0%', background: color }}
-                  />
-                </div>
+                    className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-3 mr-auto"
+                    style={{ background: bg }}
+                  >
+                    {icon}
+                  </div>
 
-                {/* Lessons count */}
-                <div className="text-xs text-slate-400 font-medium">
-                  {total} درس
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                  <div className="font-black text-slate-900 text-sm leading-tight mb-1">
+                    {subject.title}
+                  </div>
+
+                  <div className="font-bold text-xs mb-2" style={{ color }}>
+                    {total ? 'متاح للمذاكرة' : 'قريبا'}
+                  </div>
+
+                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{ width: total ? '100%' : '0%', background: color }}
+                    />
+                  </div>
+
+                  <div className="text-xs text-slate-400 font-medium">
+                    {total} درس
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <BottomNav active="subjects" />
