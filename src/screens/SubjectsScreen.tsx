@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
-import { getStoredProfile, getSubjectsByTrack, Subject } from '../lib/api';
+import { getStoredProfile, getSubjectsByTrack, restoreSession, Subject } from '../lib/api';
 
 const subjectStyles = [
   ['📐', '#1E6FF0', '#EFF6FF'], ['🔬', '#10B981', '#F0FDF4'],
@@ -15,47 +15,60 @@ export default function SubjectsScreen() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  // منع الاستدعاءات المتكررة عند الـ StrictMode
-  const isFetchingRef = useRef(false);
+  const isMounted = useRef(true);
 
-  const fetchSubjects = async () => {
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
-
+  const loadSubjects = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
 
-      const profile = getStoredProfile();
+      // 1. جلب البيانات المخزنة محلياً
+      let profile = getStoredProfile();
+
+      // 2. إذا لم يجد track_id محلياً، يحاول استعادة الجلسة من السيرفر فوراً
       if (!profile?.track_id) {
-        setError('يرجى تسجيل الدخول واختيار المسار الدراسي');
-        setLoading(false);
-        isFetchingRef.current = false;
+        profile = await restoreSession();
+      }
+
+      if (!profile?.track_id) {
+        if (isMounted.current) {
+          setError('لم يتم العثور على المسار الدراسي الخاص بحسابك. يرجى إعادة تسجيل الدخول.');
+          setLoading(false);
+        }
         return;
       }
 
+      // 3. جلب المواد باستخدام track_id المؤكد
       const data = await getSubjectsByTrack(profile.track_id);
 
-      // الشرط الأهم: لا نحدّث الـ state إلا إذا كانت البيانات القادمة تحتوي على مواد فعلاً
-      if (Array.isArray(data) && data.length > 0) {
-        setSubjects(data);
-      } else {
-        // إذا رجعت فارغة ولكن لدينا مواد سابقة، نحتفظ بالقديم
-        setSubjects((prev) => (prev.length > 0 ? prev : []));
+      if (isMounted.current) {
+        if (data && data.length > 0) {
+          setSubjects(data);
+        } else {
+          // الحفاظ على القائمة السابقة في حال حدوث رد فارغ مؤقت
+          setSubjects((prev) => (prev.length > 0 ? prev : []));
+        }
       }
     } catch (err: any) {
-      console.error('Fetch error:', err);
-      setError('تعذر الاتصال بالسيرفر، يرجى المحاولة لاحقاً');
+      if (isMounted.current) {
+        console.error('Failed to load subjects:', err);
+        setError('حدث خطأ أثناء تحميل المواد الدراسية.');
+      }
     } finally {
-      setLoading(false);
-      isFetchingRef.current = false;
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchSubjects();
-  }, []);
+    isMounted.current = true;
+    loadSubjects();
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [loadSubjects]);
 
   const totalLessons = subjects.reduce((sum, subject) => {
     return (
@@ -80,7 +93,7 @@ export default function SubjectsScreen() {
         </p>
       </div>
 
-      {/* Main Container */}
+      {/* Grid */}
       <div className="flex-1 overflow-y-auto p-5 pb-24">
         {/* Stats row */}
         <div className="flex gap-3 mb-5">
@@ -98,20 +111,15 @@ export default function SubjectsScreen() {
           </div>
         </div>
 
-        {/* Loading */}
         {loading && subjects.length === 0 && (
           <div className="text-center text-slate-500 py-10 font-bold">جاري تحميل المواد...</div>
         )}
 
-        {/* Error */}
         {error && subjects.length === 0 && (
           <div className="text-center py-10 flex flex-col items-center gap-3">
             <span className="text-red-500 font-bold">{error}</span>
             <button
-              onClick={() => {
-                isFetchingRef.current = false;
-                fetchSubjects();
-              }}
+              onClick={loadSubjects}
               className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold cursor-pointer"
             >
               إعادة المحاولة 🔄
@@ -119,15 +127,11 @@ export default function SubjectsScreen() {
           </div>
         )}
 
-        {/* Empty */}
         {!loading && !error && subjects.length === 0 && (
           <div className="text-center py-10 flex flex-col items-center gap-3">
             <span className="text-slate-500 font-bold">لا توجد مواد مرتبطة بمسارك حاليا</span>
             <button
-              onClick={() => {
-                isFetchingRef.current = false;
-                fetchSubjects();
-              }}
+              onClick={loadSubjects}
               className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold cursor-pointer"
             >
               تحديث الصفحة 🔄
@@ -135,13 +139,13 @@ export default function SubjectsScreen() {
           </div>
         )}
 
-        {/* Subjects List */}
         {subjects.length > 0 && (
           <div className="grid grid-cols-2 gap-3">
             {subjects.map((subject, index) => {
               const [icon, color, bg] = subjectStyles[index % subjectStyles.length];
               const total = (subject.books ?? []).reduce(
-                (sum, book) => sum + (book.total_lessons_generated ?? 0), 0
+                (sum, book) => sum + (book.total_lessons_generated ?? 0),
+                0
               );
 
               return (
@@ -180,9 +184,7 @@ export default function SubjectsScreen() {
                     />
                   </div>
 
-                  <div className="text-xs text-slate-400 font-medium">
-                    {total} درس
-                  </div>
+                  <div className="text-xs text-slate-400 font-medium">{total} درس</div>
                 </button>
               );
             })}
