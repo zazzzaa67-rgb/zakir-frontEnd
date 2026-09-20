@@ -55,7 +55,7 @@ export default function App() {
             <Route path="/teams" element={<TeamScreen />} />
             <Route path="/home" element={<HomeScreen />} />
             <Route path="/subjects" element={<SubjectsScreen />} />
-            
+            <Route path="/lesson-list/:subjectId" element={<LessonListScreen />} />
             {/* المسارات التي تتطلب parameters تصبح جزءاً من الـ URL بشكل دائم */}
             <Route path="/subjects/:subjectId/lessons" element={<LessonListScreen />} />
             <Route path="/ai-lesson/:lessonId" element={<AILessonScreen />} />
