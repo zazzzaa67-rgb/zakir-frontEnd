@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { 
@@ -18,44 +18,46 @@ const subjectStyles = [
 
 export default function SubjectsScreen() {
   const navigate = useNavigate();
-  
-  // 1. استخدام الكاش المباشر فور الفتح لمنع اختفاء المواد عند الـ Refresh
-  const [subjects, setSubjects] = useState<Subject[]>(() => getCachedSubjects());
-  const [loading, setLoading] = useState(() => getCachedSubjects().length === 0);
-  const [error, setError] = useState('');
   const isMounted = useRef(true);
 
-  const loadSubjects = useCallback(async () => {
+  // 1. القراءة المباشرة من الكاش مع الاحتفاظ بالبيانات السابقة دائماً
+  const [subjects, setSubjects] = useState<Subject[]>(() => {
+    const cached = getCachedSubjects();
+    return Array.isArray(cached) && cached.length > 0 ? cached : [];
+  });
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // 2. دالة الجلب المباشرة من الـ API دون الاعتماد على state خارجي
+  const fetchSubjectsData = async (isManualRefresh = false) => {
     try {
-      if (subjects.length === 0) setLoading(true);
+      if (isManualRefresh || subjects.length === 0) {
+        setLoading(true);
+      }
       setError('');
 
       let profile = getStoredProfile();
-
       if (!profile?.track_id) {
         profile = await restoreSession();
       }
 
       if (!profile?.track_id) {
-        if (isMounted.current) {
-          if (subjects.length === 0) {
-            setError('لم يتم العثور على المسار الدراسي الخاص بحسابك. يرجى إعادة تسجيل الدخول.');
-          }
-          setLoading(false);
+        if (isMounted.current && subjects.length === 0) {
+          setError('لم يتم العثور على المسار الدراسي الخاص بحسابك. يرجى إعادة تسجيل الدخول.');
         }
         return;
       }
 
       const data = await getSubjectsByTrack(profile.track_id);
 
-      if (isMounted.current) {
-        if (data && data.length > 0) {
-          setSubjects(data);
-        }
+      if (isMounted.current && Array.isArray(data) && data.length > 0) {
+        setSubjects(data);
       }
     } catch (err: any) {
       if (isMounted.current) {
         console.error('Failed to load subjects:', err);
+        // الاحتفاظ بالخيار المتاح من المواد وعدم مسحها عند حدوث خطأ شبكة
         if (subjects.length === 0) {
           setError('حدث خطأ أثناء تحميل المواد الدراسية.');
         }
@@ -65,16 +67,22 @@ export default function SubjectsScreen() {
         setLoading(false);
       }
     }
-  }, [subjects.length]);
+  };
 
+  // 3. التنفيذ مرة واحدة فقط عند فتح الشاشة
   useEffect(() => {
     isMounted.current = true;
-    loadSubjects();
+
+    // إذا كانت المواد غير متوفرة في الكاش، قم بجلبها فوراً
+    const cached = getCachedSubjects();
+    if (!cached || cached.length === 0) {
+      fetchSubjectsData();
+    }
 
     return () => {
       isMounted.current = false;
     };
-  }, [loadSubjects]);
+  }, []);
 
   const totalLessons = subjects.reduce((sum, subject) => {
     return (
@@ -88,15 +96,26 @@ export default function SubjectsScreen() {
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]" dir="rtl">
-      {/* Header */}
+      {/* Header مع زر التحديث */}
       <div
-        className="px-5 pt-12 pb-5"
+        className="px-5 pt-12 pb-5 flex items-center justify-between"
         style={{ background: 'linear-gradient(160deg, #1E6FF0 0%, #0D4FB5 100%)' }}
       >
-        <h1 className="text-2xl font-black text-white text-right">المواد الدراسية</h1>
-        <p className="text-blue-200 text-sm font-medium mt-1 text-right">
-          مواد مسارك الدراسي • {subjects.length} مواد
-        </p>
+        <div>
+          <h1 className="text-2xl font-black text-white text-right">المواد الدراسية</h1>
+          <p className="text-blue-200 text-sm font-medium mt-1 text-right">
+            مواد مسارك الدراسي • {subjects.length} مواد
+          </p>
+        </div>
+
+        <button
+          onClick={() => fetchSubjectsData(true)}
+          disabled={loading}
+          className="p-2.5 bg-white/10 hover:bg-white/20 active:scale-95 rounded-xl text-white transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+        >
+          <span className={loading ? 'animate-spin' : ''}>🔄</span>
+          <span>{loading ? 'جاري التحديث...' : 'تحديث'}</span>
+        </button>
       </div>
 
       {/* Grid */}
@@ -125,7 +144,7 @@ export default function SubjectsScreen() {
           <div className="text-center py-10 flex flex-col items-center gap-3">
             <span className="text-red-500 font-bold">{error}</span>
             <button
-              onClick={loadSubjects}
+              onClick={() => fetchSubjectsData(true)}
               className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold cursor-pointer"
             >
               إعادة المحاولة 🔄
@@ -137,7 +156,7 @@ export default function SubjectsScreen() {
           <div className="text-center py-10 flex flex-col items-center gap-3">
             <span className="text-slate-500 font-bold">لا توجد مواد مرتبطة بمسارك حاليا</span>
             <button
-              onClick={loadSubjects}
+              onClick={() => fetchSubjectsData(true)}
               className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold cursor-pointer"
             >
               تحديث الصفحة 🔄
@@ -154,7 +173,6 @@ export default function SubjectsScreen() {
                 0
               );
 
-              // 2. استخراج المعرف المضمون بدون undefined
               const subjectId = subject.id || (subject as any)._id || (subject as any).subject_id;
 
               return (
