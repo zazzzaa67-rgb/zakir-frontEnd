@@ -48,6 +48,7 @@ export type LessonQuestion = {
 };
 
 export type LessonDetails = ApiLesson & {
+  title?: string; // 👈 أضف هذا السطر هنا لتجنب خطأ التايب سكريبت
   content_json: {
     pdf_summary_url?: string;
     summary?: string;

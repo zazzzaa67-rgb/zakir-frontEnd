@@ -209,7 +209,15 @@ export default function LessonListScreen() {
                   return (
                     <div
                       key={lesson.id}
-                      onClick={() => !isLocked && navigate(`/ai-lesson/${lesson.id}`)}
+                      onClick={() =>
+                      !isLocked &&
+                      navigate(`/ai-lesson/${lesson.id}`, {
+                        state: {
+                          lessonId: lesson.id,
+                          lesson: lesson.title,
+                        },
+                      })
+                    }
                       className={`bg-white rounded-2xl p-4 flex items-center gap-3 text-right transition-transform ${
                         isLocked ? 'cursor-not-allowed opacity-80' : 'cursor-pointer active:scale-98'
                       }`}

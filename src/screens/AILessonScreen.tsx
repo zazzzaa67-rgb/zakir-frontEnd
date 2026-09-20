@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { askLessonAI, getLessonById, LessonDetails } from '../lib/api';
 
@@ -9,35 +9,52 @@ const modes = [
   { icon: '🧠', label: 'امتحان الدرس', screen: 'quiz' as const },
 ];
 
-const aiMessages = [
-  "أهلاً! أنا هنا أشرحلك درس المعادلات الخطية بطريقة بسيطة 🤖",
-  "المعادلة الخطية هي معادلة بتتكون من متغير واحد مرفوع للأس الأول. الشكل العام: ax + b = c",
-  "فهمت الجزئية دي؟",
+const initialAiMessages = [
+  "أهلاً بك! أنا مساعدك الذكي لمذاكرة هذا الدرس 🤖",
+  "يمكنك لسؤالي عن أي جزئية غير واضحة، أو طلب أمثلة إضافية وشرح مبسط.",
 ];
 
 export default function AILessonScreen() {
   const navigate = useNavigate();
   const location = useLocation();
-  const params = location.state as { lesson?: string; lessonId?: string } | null;
+  const { lessonId: paramLessonId } = useParams<{ lessonId: string }>();
 
-  const lesson = params?.lesson || 'المعادلات الخطية';
-  const lessonId = params?.lessonId;
+  // استقبال البيانات من State أو من Route Params
+  const state = (location.state as { lesson?: string; lessonId?: string }) || {};
+  const lessonId = paramLessonId || state.lessonId;
+  
+  const [lessonTitle, setLessonTitle] = useState(state.lesson || 'جاري تحميل عنوان الدرس...');
   const [lessonDetails, setLessonDetails] = useState<LessonDetails | null>(null);
   const [userInput, setUserInput] = useState('');
-  const [messages, setMessages] = useState(aiMessages);
+  const [messages, setMessages] = useState<string[]>(initialAiMessages);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState('');
 
+  // جلب تفاصيل الدرس
   useEffect(() => {
     if (!lessonId) return;
-    getLessonById(lessonId).then(setLessonDetails).catch(() => undefined);
+
+    getLessonById(lessonId)
+      .then((details) => {
+        setLessonDetails(details);
+        if (details?.title) {
+          setLessonTitle(details.title);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load lesson details:', err);
+      });
   }, [lessonId]);
 
+  // فتح أوراق العمل / الاختيارات / PDF
   const openMode = (mode: typeof modes[number]) => {
     if (mode.screen === 'pdf') {
-      const pdfUrl = lessonDetails?.content_json.pdf_summary_url;
-      if (pdfUrl) window.open(pdfUrl, '_blank', 'noopener,noreferrer');
-      else setChatError('مذكرة PDF لهذا الدرس غير متاحة حاليا');
+      const pdfUrl = lessonDetails?.content_json?.pdf_summary_url;
+      if (pdfUrl) {
+        window.open(pdfUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        setChatError('مذكرة PDF لهذا الدرس غير متاحة حالياً');
+      }
       return;
     }
 
@@ -45,29 +62,35 @@ export default function AILessonScreen() {
     navigate(path, {
       state: {
         lessonId,
-        lesson,
-        questions: mode.screen === 'homework'
-          ? lessonDetails?.content_json.homework ?? lessonDetails?.content_json.quiz
-          : lessonDetails?.content_json.exam ?? lessonDetails?.content_json.quiz,
+        lesson: lessonTitle,
+        questions:
+          mode.screen === 'homework'
+            ? lessonDetails?.content_json?.homework ?? lessonDetails?.content_json?.quiz
+            : lessonDetails?.content_json?.exam ?? lessonDetails?.content_json?.quiz,
       },
     });
   };
 
-  const handleSend = async () => {
-    if (!userInput.trim()) return;
+  // إرسال الرسالة للذكاء الاصطناعي
+  const handleSend = async (textToSend?: string) => {
+    const message = (textToSend || userInput).trim();
+    if (!message) return;
+
     if (!lessonId) {
-      setChatError('افتح المحادثة من درس محدد حتى أقدر أجاوب من محتواه');
+      setChatError('يرجى فتح الدرس من قائمة الدروس أولاً');
       return;
     }
-    const message = userInput.trim();
+
     const history = messages.map((item) => ({
       role: item.startsWith('أنت:') ? ('user' as const) : ('model' as const),
       text: item.replace(/^أنت:\s*/, ''),
     }));
+
     setMessages((current) => [...current, `أنت: ${message}`]);
     setUserInput('');
     setChatError('');
     setChatLoading(true);
+
     try {
       const result = await askLessonAI(lessonId, message, history);
       setMessages((current) => [...current, result.answer]);
@@ -79,34 +102,36 @@ export default function AILessonScreen() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
+    <div className="w-full h-full flex flex-col bg-[#F0F4FF] text-right" dir="rtl">
       {/* Header */}
       <div
         className="px-5 pt-12 pb-4 relative overflow-hidden"
         style={{ background: 'linear-gradient(160deg, #0D2356 0%, #1E1B4B 100%)' }}
       >
         <div className="flex items-center justify-between mb-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+          >
+            <span className="text-white font-bold text-lg">→</span>
+          </button>
+
           <div className="flex gap-2">
             {modes.map((m) => (
               <button
                 key={m.label}
                 onClick={() => openMode(m)}
-                className="text-base px-2 py-1.5 rounded-xl bg-white/10 text-white active:bg-white/20"
+                className="text-base px-2.5 py-1.5 rounded-xl bg-white/10 text-white active:bg-white/20 transition-colors"
                 title={m.label}
               >
                 {m.icon}
               </button>
             ))}
           </div>
-          <button
-            onClick={() => navigate('/lesson-list')}
-            className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center cursor-pointer"
-          >
-            <span className="text-white font-bold">→</span>
-          </button>
         </div>
-        <h1 className="text-xl font-black text-white text-right">ذاكر معي 🤖</h1>
-        <p className="text-blue-300 text-sm font-medium text-right mt-0.5">{lesson}</p>
+        
+        <h1 className="text-xl font-black text-white">ذاكر معي 🤖</h1>
+        <p className="text-blue-300 text-sm font-medium mt-0.5 truncate">{lessonTitle}</p>
       </div>
 
       {/* AI Tutor visual + mode cards */}
@@ -120,19 +145,18 @@ export default function AILessonScreen() {
           }}
         >
           <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center text-4xl flex-shrink-0"
+            className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
             style={{
               background: 'linear-gradient(135deg, #1E6FF0, #7C3AED)',
               boxShadow: '0 4px 16px rgba(30,111,240,0.4)',
-              animation: 'pulse 3s ease-in-out infinite',
             }}
           >
             🤖
           </div>
           <div className="text-right flex-1">
-            <div className="text-white font-black text-base">مساعد ذاكر معي</div>
-            <div className="text-indigo-300 text-xs font-medium mt-0.5">جاهز أشرحلك الدرس بطريقتك</div>
-            <div className="flex items-center gap-1.5 justify-end mt-2">
+            <div className="text-white font-black text-base">مساعد ذاكر الذكي</div>
+            <div className="text-indigo-300 text-xs font-medium mt-0.5">جاهز لشرح وتبسيط نقاط الدرس</div>
+            <div className="flex items-center gap-1.5 justify-start mt-2">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-emerald-300 text-xs font-semibold">نشط الآن</span>
             </div>
@@ -140,7 +164,7 @@ export default function AILessonScreen() {
         </div>
 
         {/* Mode cards */}
-        <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="grid grid-cols-3 gap-2 mb-2">
           {modes.map((m) => (
             <button
               key={m.label}
@@ -153,8 +177,9 @@ export default function AILessonScreen() {
             </button>
           ))}
         </div>
+
         {chatError && (
-          <div className="mb-4 rounded-2xl border border-red-100 bg-red-50 p-3 text-right text-sm font-bold text-red-600">
+          <div className="mt-3 rounded-2xl border border-red-100 bg-red-50 p-3 text-right text-xs font-bold text-red-600">
             {chatError}
           </div>
         )}
@@ -166,11 +191,14 @@ export default function AILessonScreen() {
           {messages.map((msg, i) => {
             const isUser = msg.startsWith('أنت:');
             return (
-              <div key={i} className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}>
+              <div key={i} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                 {!isUser && (
-                  <div className="flex items-end gap-2 max-w-[85%]">
+                  <div className="flex items-start gap-2 max-w-[85%]">
+                    <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-sm flex-shrink-0 mt-1">
+                      🤖
+                    </div>
                     <div
-                      className="rounded-2xl rounded-bl-sm px-4 py-3 text-sm font-medium leading-relaxed"
+                      className="rounded-2xl rounded-tr-sm px-4 py-3 text-sm font-medium leading-relaxed"
                       style={{
                         background: 'linear-gradient(135deg, #1E6FF0, #7C3AED)',
                         color: 'white',
@@ -178,17 +206,14 @@ export default function AILessonScreen() {
                     >
                       {msg}
                     </div>
-                    <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-sm flex-shrink-0">
-                      🤖
-                    </div>
                   </div>
                 )}
                 {isUser && (
                   <div
-                    className="max-w-[75%] rounded-2xl rounded-br-sm px-4 py-3 text-sm font-medium"
+                    className="max-w-[75%] rounded-2xl rounded-tl-sm px-4 py-3 text-sm font-medium"
                     style={{ background: '#E2E8F0', color: '#0F172A' }}
                   >
-                    {msg.replace('أنت: ', '')}
+                    {msg.replace(/^أنت:\s*/, '')}
                   </div>
                 )}
               </div>
@@ -196,22 +221,17 @@ export default function AILessonScreen() {
           })}
 
           {/* Quick response buttons */}
-          <div className="flex flex-wrap gap-2 justify-end mt-1">
+          <div className="flex flex-wrap gap-2 justify-start mt-2">
             {[
-              { label: '👍 أيوه فهمت', action: () => setUserInput('اديني مثال كمان من الدرس') },
-              { label: '🤔 اشرحها تاني', action: () => setUserInput('اشرح النقطة دي بطريقة أبسط') },
-              { label: '❓ عندي سؤال', action: () => setUserInput('') },
+              { label: '👍 أيوه فهمت', text: 'اديني مثال كمان من الدرس' },
+              { label: '🤔 اشرحها تاني', text: 'اشرح النقطة دي بطريقة أبسط' },
+              { label: '❓ ملخص الدرس', text: 'ممكن تلخصلي الدرس في نقاط سريعة؟' },
             ].map((btn) => (
               <button
                 key={btn.label}
-                onClick={btn.action}
-                className="px-4 py-2 rounded-xl text-sm font-bold active:scale-95 transition-transform cursor-pointer"
-                style={{
-                  background: 'white',
-                  color: '#1E6FF0',
-                  border: '1.5px solid #DBEAFE',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                }}
+                onClick={() => void handleSend(btn.text)}
+                disabled={chatLoading}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 transition-transform cursor-pointer bg-white text-blue-600 border border-blue-100 shadow-sm disabled:opacity-50"
               >
                 {btn.label}
               </button>
@@ -221,12 +241,19 @@ export default function AILessonScreen() {
       </div>
 
       {/* Input area */}
-      <div className="px-5 pb-24 pt-3 bg-white border-t border-slate-100">
+      <div className="px-5 pb-20 pt-3 bg-white border-t border-slate-100">
         <div className="flex gap-2 items-center">
+          <input
+            value={userInput}
+            onChange={(e) => setUserInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && void handleSend()}
+            placeholder="اسألني أي سؤال عن الدرس..."
+            className="flex-1 bg-slate-50 rounded-xl px-4 py-3 text-sm text-slate-900 text-right outline-none border border-slate-200 placeholder:text-slate-400"
+          />
           <button
             onClick={() => void handleSend()}
             disabled={chatLoading || !userInput.trim()}
-            className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+            className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform cursor-pointer font-bold text-lg"
             style={{
               background: 'linear-gradient(135deg, #1E6FF0, #7C3AED)',
               color: 'white',
@@ -235,14 +262,6 @@ export default function AILessonScreen() {
           >
             ↑
           </button>
-          <input
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && void handleSend()}
-            placeholder="اسألني أي سؤال عن الدرس..."
-            className="flex-1 bg-slate-50 rounded-xl px-4 py-3 text-sm text-slate-900 text-right outline-none border border-slate-200 placeholder:text-slate-400"
-            style={{ fontFamily: 'Cairo, sans-serif' }}
-          />
         </div>
         {chatLoading && (
           <p className="mt-2 text-right text-xs font-bold text-blue-600">مساعد الدرس بيجهز الإجابة...</p>
