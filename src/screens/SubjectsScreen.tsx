@@ -1,7 +1,13 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
-import { getStoredProfile, getSubjectsByTrack, restoreSession, Subject } from '../lib/api';
+import { 
+  getStoredProfile, 
+  getSubjectsByTrack, 
+  getCachedSubjects, 
+  restoreSession, 
+  Subject 
+} from '../lib/api';
 
 const subjectStyles = [
   ['📐', '#1E6FF0', '#EFF6FF'], ['🔬', '#10B981', '#F0FDF4'],
@@ -12,54 +18,54 @@ const subjectStyles = [
 
 export default function SubjectsScreen() {
   const navigate = useNavigate();
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  // 1. استخدام الكاش المباشر فور الفتح لمنع اختفاء المواد عند الـ Refresh
+  const [subjects, setSubjects] = useState<Subject[]>(() => getCachedSubjects());
+  const [loading, setLoading] = useState(() => getCachedSubjects().length === 0);
   const [error, setError] = useState('');
   const isMounted = useRef(true);
 
   const loadSubjects = useCallback(async () => {
     try {
-      setLoading(true);
+      if (subjects.length === 0) setLoading(true);
       setError('');
 
-      // 1. جلب البيانات المخزنة محلياً
       let profile = getStoredProfile();
 
-      // 2. إذا لم يجد track_id محلياً، يحاول استعادة الجلسة من السيرفر فوراً
       if (!profile?.track_id) {
         profile = await restoreSession();
       }
 
       if (!profile?.track_id) {
         if (isMounted.current) {
-          setError('لم يتم العثور على المسار الدراسي الخاص بحسابك. يرجى إعادة تسجيل الدخول.');
+          if (subjects.length === 0) {
+            setError('لم يتم العثور على المسار الدراسي الخاص بحسابك. يرجى إعادة تسجيل الدخول.');
+          }
           setLoading(false);
         }
         return;
       }
 
-      // 3. جلب المواد باستخدام track_id المؤكد
       const data = await getSubjectsByTrack(profile.track_id);
 
       if (isMounted.current) {
         if (data && data.length > 0) {
           setSubjects(data);
-        } else {
-          // الحفاظ على القائمة السابقة في حال حدوث رد فارغ مؤقت
-          setSubjects((prev) => (prev.length > 0 ? prev : []));
         }
       }
     } catch (err: any) {
       if (isMounted.current) {
         console.error('Failed to load subjects:', err);
-        setError('حدث خطأ أثناء تحميل المواد الدراسية.');
+        if (subjects.length === 0) {
+          setError('حدث خطأ أثناء تحميل المواد الدراسية.');
+        }
       }
     } finally {
       if (isMounted.current) {
         setLoading(false);
       }
     }
-  }, []);
+  }, [subjects.length]);
 
   useEffect(() => {
     isMounted.current = true;
@@ -148,14 +154,25 @@ export default function SubjectsScreen() {
                 0
               );
 
+              // 2. استخراج المعرف المضمون بدون undefined
+              const subjectId = subject.id || (subject as any)._id || (subject as any).subject_id;
+
               return (
                 <button
-                  key={subject.id}
-                  onClick={() =>
-                    navigate(`/lesson-list/${subject.id}`, {
-                      state: { subject: subject.title, icon },
-                    })
-                  }
+                  key={subjectId || index}
+                  onClick={() => {
+                    if (!subjectId) {
+                      console.error("لم يتم العثور على id للمادة:", subject);
+                      return;
+                    }
+                    navigate(`/lesson-list/${subjectId}`, {
+                      state: { 
+                        subjectId: subjectId,
+                        subjectTitle: subject.title, 
+                        icon 
+                      },
+                    });
+                  }}
                   className="rounded-2xl p-4 text-right active:scale-95 transition-transform cursor-pointer"
                   style={{
                     background: 'white',

@@ -150,7 +150,24 @@ export async function signUp(payload: { email: string; password: string; display
   return result.profile;
 }
 
+// دالة لجلب الكاش المحلي للمواد
+export function getCachedSubjects(): Subject[] {
+  try {
+    const cached = localStorage.getItem('zakker_cached_subjects');
+    return cached ? JSON.parse(cached) : [];
+  } catch {
+    return [];
+  }
+}
 
+// دالة لحفظ المواد في الكاش المحلي
+export function setCachedSubjects(subjects: Subject[]) {
+  try {
+    localStorage.setItem('zakker_cached_subjects', JSON.stringify(subjects));
+  } catch (e) {
+    console.error('Failed to cache subjects', e);
+  }
+}
 
 export async function getSubjectsByTrack(trackId: string) {
   if (!trackId || trackId === 'undefined' || trackId === 'null') {
