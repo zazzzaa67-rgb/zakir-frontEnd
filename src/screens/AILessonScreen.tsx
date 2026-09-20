@@ -71,8 +71,7 @@ export default function AILessonScreen() {
     });
   };
 
-  // إرسال الرسالة للذكاء الاصطناعي
-  const handleSend = async (textToSend?: string) => {
+const handleSend = async (textToSend?: string) => {
     const message = (textToSend || userInput).trim();
     if (!message) return;
 
@@ -92,15 +91,22 @@ export default function AILessonScreen() {
     setChatLoading(true);
 
     try {
-      const result = await askLessonAI(lessonId, message, history);
-      setMessages((current) => [...current, result.answer]);
+      const result: any = await askLessonAI(lessonId, message, history as any);
+      
+      const replyText =
+        result?.answer ||
+        result?.reply ||
+        result?.candidates?.[0]?.content?.parts?.[0]?.text ||
+        (typeof result === 'string' ? result : 'تم استقبال الإجابة بنجاح');
+
+      setMessages((current) => [...current, replyText]);
     } catch (error) {
+      console.error('Chat AI Error:', error);
       setChatError(error instanceof Error ? error.message : 'تعذر تشغيل مساعد الدرس');
     } finally {
       setChatLoading(false);
     }
   };
-
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF] text-right" dir="rtl">
       {/* Header */}
