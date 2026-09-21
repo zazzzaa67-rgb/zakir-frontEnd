@@ -113,7 +113,10 @@ export default function AILessonScreen() {
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
 
-      const response = await fetch(`${API_BASE_URL}/lessons/${lessonId}/chat`, {
+      // تنظيف الـ lessonId من أي نقط زائدة لضمان صحة الـ URL
+      const cleanLessonId = lessonId?.replace(/\.{2,}/g, '.').trim();
+
+      const response = await fetch(`${API_BASE_URL}/lessons/${cleanLessonId}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -328,7 +331,6 @@ export default function AILessonScreen() {
           </button>
         </div>
       </div>
-
       <BottomNav active="ai_lesson" />
     </div>
   );
