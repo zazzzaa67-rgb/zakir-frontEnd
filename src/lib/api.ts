@@ -164,30 +164,46 @@ export function getCachedSubjects(): Subject[] {
 // دالة لحفظ المواد في الكاش المحلي
 export function setCachedSubjects(subjects: Subject[]) {
   try {
-    localStorage.setItem('zakker_cached_subjects', JSON.stringify(subjects));
+    if (Array.isArray(subjects) && subjects.length > 0) {
+      localStorage.setItem('zakker_cached_subjects', JSON.stringify(subjects));
+    }
   } catch (e) {
     console.error('Failed to cache subjects', e);
   }
 }
 
-export async function getSubjectsByTrack(trackId: string) {
+// دالة جلب المواد من السيرفر مع دمج الكاش لتفادي الـ 404
+export async function getSubjectsByTrack(trackId: string): Promise<Subject[]> {
   if (!trackId || trackId === 'undefined' || trackId === 'null') {
     console.error('❌ track_id غير صحيح أو غير موجود:', trackId);
-    return [];
+    return getCachedSubjects();
   }
 
   try {
+    // إرسال الطلب إلى الخادم
     const result = await request<Subject[]>(`/subjects?track_id=${encodeURIComponent(trackId)}`);
     
-    // طباعة البيانات في الـ Console لمعاينتها أثناء التشغيل
     console.log('✅ المواد المستقبلة من السيرفر:', result);
 
-    if (Array.isArray(result)) {
+    if (Array.isArray(result) && result.length > 0) {
+      // 1. تحديث الكاش تلقائياً فور نجاح الجلب
+      setCachedSubjects(result);
       return result;
     }
-    return [];
+
+    // إذا كانت النتيجة فارغة من السيرفر، نعيد الكاش القديم
+    const cached = getCachedSubjects();
+    return cached.length > 0 ? cached : [];
+
   } catch (error) {
-    console.error('❌ خطأ أثناء جلب المواد:', error);
+    console.error('❌ خطأ أثناء جلب المواد، يتم استخدام الكاش المحلي:', error);
+    
+    // 2. عند فشل الاتصال بالسيرفر (404 / Connection Reset)، إرجاع الكاش بدلاً من رمي خطأ يمسح الشاشة
+    const cached = getCachedSubjects();
+    if (cached.length > 0) {
+      return cached;
+    }
+
     throw error;
   }
 }
