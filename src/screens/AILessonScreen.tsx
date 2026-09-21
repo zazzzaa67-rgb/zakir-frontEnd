@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
-import { askLessonAI, getLessonById, LessonDetails } from '../lib/api';
+import { getLessonById, LessonDetails } from '../lib/api';
 
 const modes = [
   { icon: '📄', label: 'ملف الدرس PDF', screen: 'pdf' as const },
@@ -9,9 +9,9 @@ const modes = [
   { icon: '🧠', label: 'امتحان الدرس', screen: 'quiz' as const },
 ];
 
-const initialAiMessages = [
-  "أهلاً بك! أنا مساعدك الذكي لمذاكرة هذا الدرس 🤖",
-  "يمكنك لسؤالي عن أي جزئية غير واضحة، أو طلب أمثلة إضافية وشرح مبسط.",
+const initialAiMessages: Array<{ role: 'user' | 'model'; text: string }> = [
+  { role: 'model', text: 'أهلاً بك! أنا مساعدك الذكي لمذاكرة هذا الدرس 🤖' },
+  { role: 'model', text: 'يمكنك لسؤالي عن أي جزئية غير واضحة، أو طلب أمثلة إضافية وشرح مبسط.' },
 ];
 
 export default function AILessonScreen() {
@@ -19,14 +19,14 @@ export default function AILessonScreen() {
   const location = useLocation();
   const { lessonId: paramLessonId } = useParams<{ lessonId: string }>();
 
-  // استقبال البيانات من State أو من Route Params
+  // استقبال البيانات من State أو Route Params
   const state = (location.state as { lesson?: string; lessonId?: string }) || {};
   const lessonId = paramLessonId || state.lessonId;
-  
+
   const [lessonTitle, setLessonTitle] = useState(state.lesson || 'جاري تحميل عنوان الدرس...');
   const [lessonDetails, setLessonDetails] = useState<LessonDetails | null>(null);
   const [userInput, setUserInput] = useState('');
-  const [messages, setMessages] = useState<string[]>(initialAiMessages);
+  const [messages, setMessages] = useState<Array<{ role: 'user' | 'model'; text: string }>>(initialAiMessages);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState('');
 
@@ -37,8 +37,8 @@ export default function AILessonScreen() {
     getLessonById(lessonId)
       .then((details) => {
         setLessonDetails(details);
-        if (details?.title) {
-          setLessonTitle(details.title);
+        if (details?.lesson_title || details?.title) {
+          setLessonTitle(details.lesson_title || details.title || '');
         }
       })
       .catch((err) => {
@@ -58,55 +58,114 @@ export default function AILessonScreen() {
       return;
     }
 
+    const questions =
+      mode.screen === 'homework'
+        ? lessonDetails?.content_json?.homework ?? lessonDetails?.content_json?.quiz
+        : lessonDetails?.content_json?.exam ?? lessonDetails?.content_json?.quiz;
+
+    if (!questions || (Array.isArray(questions) && questions.length === 0)) {
+      setChatError(`لا يوجد ${mode.label} متاح لهذا الدرس حالياً`);
+      return;
+    }
+
     const path = mode.screen === 'homework' ? '/homework' : '/quiz';
+    
+    // تمرير id و lessonId لتفادي إعادة التوجيه للصفحة الرئيسية
     navigate(path, {
       state: {
+        id: lessonId,
         lessonId,
         lesson: lessonTitle,
-        questions:
-          mode.screen === 'homework'
-            ? lessonDetails?.content_json?.homework ?? lessonDetails?.content_json?.quiz
-            : lessonDetails?.content_json?.exam ?? lessonDetails?.content_json?.quiz,
+        lesson_title: lessonTitle,
+        questions,
       },
     });
   };
 
-const handleSend = async (textToSend?: string) => {
+  // إرسال السؤال ومعالجة البث المباشر (Streaming)
+  const handleSend = async (textToSend?: string) => {
     const message = (textToSend || userInput).trim();
-    if (!message) return;
+    if (!message || chatLoading) return;
 
     if (!lessonId) {
       setChatError('يرجى فتح الدرس من قائمة الدروس أولاً');
       return;
     }
 
-    const history = messages.map((item) => ({
-      role: item.startsWith('أنت:') ? ('user' as const) : ('model' as const),
-      text: item.replace(/^أنت:\s*/, ''),
+    // إعداد تاريخ المحادثة للسيرفر
+    const historyPayload = messages.map((m) => ({
+      role: m.role,
+      text: m.text,
     }));
 
-    setMessages((current) => [...current, `أنت: ${message}`]);
+    // إدخال رسالة الطالب ورسالة فارغة للـ AI ليتم إكمالها فورياً
+    setMessages((prev) => [
+      ...prev,
+      { role: 'user', text: message },
+      { role: 'model', text: '' },
+    ]);
+
     setUserInput('');
     setChatError('');
     setChatLoading(true);
 
     try {
-      const result: any = await askLessonAI(lessonId, message, history as any);
-      
-      const replyText =
-        result?.answer ||
-        result?.reply ||
-        result?.candidates?.[0]?.content?.parts?.[0]?.text ||
-        (typeof result === 'string' ? result : 'تم استقبال الإجابة بنجاح');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
 
-      setMessages((current) => [...current, replyText]);
-    } catch (error) {
+      const response = await fetch(`${API_BASE_URL}/lessons/${lessonId}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          message,
+          history: historyPayload,
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'تعذر تشغيل مساعد الدرس');
+      }
+
+      if (!response.body) {
+        throw new Error('لم يتم استقبال أي بيانات من السيرفر');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+
+      // قراءة الـ Chunks المباشرة وتجميع النص في أحدث رسالة
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunkText = decoder.decode(value, { stream: true });
+
+        setMessages((prev) => {
+          const next = [...prev];
+          const lastIdx = next.length - 1;
+          if (lastIdx >= 0 && next[lastIdx].role === 'model') {
+            next[lastIdx] = {
+              ...next[lastIdx],
+              text: next[lastIdx].text + chunkText,
+            };
+          }
+          return next;
+        });
+      }
+    } catch (error: any) {
       console.error('Chat AI Error:', error);
-      setChatError(error instanceof Error ? error.message : 'تعذر تشغيل مساعد الدرس');
+      setChatError(error.message || 'حدث خطأ أثناء التواصل مع المعلم الذكي');
+      // إزالة الرسالة الفارغة في حالة الخطأ
+      setMessages((prev) => prev.filter((m) => m.text.trim() !== ''));
     } finally {
       setChatLoading(false);
     }
   };
+
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF] text-right" dir="rtl">
       {/* Header */}
@@ -135,14 +194,13 @@ const handleSend = async (textToSend?: string) => {
             ))}
           </div>
         </div>
-        
+
         <h1 className="text-xl font-black text-white">ذاكر معي 🤖</h1>
         <p className="text-blue-300 text-sm font-medium mt-0.5 truncate">{lessonTitle}</p>
       </div>
 
       {/* AI Tutor visual + mode cards */}
       <div className="px-5 py-4">
-        {/* AI Avatar */}
         <div
           className="rounded-2xl p-4 flex items-center gap-4 mb-4"
           style={{
@@ -195,7 +253,7 @@ const handleSend = async (textToSend?: string) => {
       <div className="flex-1 overflow-y-auto px-5 pb-2">
         <div className="flex flex-col gap-3">
           {messages.map((msg, i) => {
-            const isUser = msg.startsWith('أنت:');
+            const isUser = msg.role === 'user';
             return (
               <div key={i} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                 {!isUser && (
@@ -204,22 +262,22 @@ const handleSend = async (textToSend?: string) => {
                       🤖
                     </div>
                     <div
-                      className="rounded-2xl rounded-tr-sm px-4 py-3 text-sm font-medium leading-relaxed"
+                      className="rounded-2xl rounded-tr-sm px-4 py-3 text-sm font-medium leading-relaxed whitespace-pre-wrap"
                       style={{
                         background: 'linear-gradient(135deg, #1E6FF0, #7C3AED)',
                         color: 'white',
                       }}
                     >
-                      {msg}
+                      {msg.text || (chatLoading && i === messages.length - 1 ? 'جاري الكتابة...' : '')}
                     </div>
                   </div>
                 )}
                 {isUser && (
                   <div
-                    className="max-w-[75%] rounded-2xl rounded-tl-sm px-4 py-3 text-sm font-medium"
+                    className="max-w-[75%] rounded-2xl rounded-tl-sm px-4 py-3 text-sm font-medium whitespace-pre-wrap"
                     style={{ background: '#E2E8F0', color: '#0F172A' }}
                   >
-                    {msg.replace(/^أنت:\s*/, '')}
+                    {msg.text}
                   </div>
                 )}
               </div>
@@ -269,9 +327,6 @@ const handleSend = async (textToSend?: string) => {
             ↑
           </button>
         </div>
-        {chatLoading && (
-          <p className="mt-2 text-right text-xs font-bold text-blue-600">مساعد الدرس بيجهز الإجابة...</p>
-        )}
       </div>
 
       <BottomNav active="ai_lesson" />
