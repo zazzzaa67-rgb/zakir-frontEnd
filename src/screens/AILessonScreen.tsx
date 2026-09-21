@@ -108,14 +108,11 @@ export default function AILessonScreen() {
     setUserInput('');
     setChatError('');
     setChatLoading(true);
-
     try {
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://zakir-backend.vercel.app/api';
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-
       // تنظيف الـ lessonId من أي نقط زائدة لضمان صحة الـ URL
       const cleanLessonId = lessonId?.replace(/\.{2,}/g, '.').trim();
-
       const response = await fetch(`${API_BASE_URL}/lessons/${cleanLessonId}/chat`, {
         method: 'POST',
         headers: {

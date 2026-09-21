@@ -61,7 +61,11 @@ export default function App() {
             <Route path="/ai-lesson/:lessonId" element={<AILessonScreen />} />
             <Route path="/video/:lessonId" element={<VideoPlayerScreen />} />
             <Route path="/summary/:lessonId" element={<LessonSummaryScreen />} />
+            {/* مسارات الواجب والامتحان بدعم الـ URL ومسارات بدون URL (عبر الـ state) */}
+            <Route path="/quiz" element={<QuizScreen />} />
             <Route path="/quiz/:lessonId" element={<QuizScreen />} />
+
+            <Route path="/homework" element={<HomeworkScreen />} />
             <Route path="/homework/:lessonId" element={<HomeworkScreen />} />
             
             <Route path="/mistakes" element={<MistakesScreen />} />
