@@ -207,10 +207,75 @@ export async function getSubjectsByTrack(trackId: string): Promise<Subject[]> {
     throw error;
   }
 }
-export async function getLessonsBySubject(subjectId: string, trackId?: string) {
-  const query = new URLSearchParams({ subject_id: subjectId });
-  if (trackId) query.set('track_id', trackId);
-  return request<ApiLesson[]>(`/lessons?${query.toString()}`);
+// 1. دوال مساعدة لحفظ وقراءة الكاش المحلي للدروس (تظل صالحة لمدة يومين)
+export function getCachedLessons(subjectId: string): ApiLesson[] {
+  try {
+    const cached = localStorage.getItem(`zakker_cached_lessons_${subjectId}`);
+    return cached ? JSON.parse(cached) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function setCachedLessons(subjectId: string, lessons: ApiLesson[]) {
+  try {
+    if (Array.isArray(lessons)) {
+      localStorage.setItem(`zakker_cached_lessons_${subjectId}`, JSON.stringify(lessons));
+      localStorage.setItem(`zakker_lessons_time_${subjectId}`, Date.now().toString());
+    }
+  } catch (e) {
+    console.error('Failed to cache lessons', e);
+  }
+}
+
+// 2. الدالة المُحدثة لجلب الدروس (مع الكاش ذو صلاحية اليومين وتوفير السيرفر)
+export async function getLessonsBySubject(subjectId: string, trackId?: string): Promise<ApiLesson[]> {
+  if (!subjectId) {
+    console.error('❌ subject_id غير موجود');
+    return [];
+  }
+
+  const cacheKey = `zakker_cached_lessons_${subjectId}`;
+  const cacheTimeKey = `zakker_lessons_time_${subjectId}`;
+  const cachedData = localStorage.getItem(cacheKey);
+  const cachedTime = localStorage.getItem(cacheTimeKey);
+
+  const now = Date.now();
+  const twoDaysInMillis = 2 * 24 * 60 * 60 * 1000; // يومين بالمللي ثانية (48 ساعة)
+
+  // لو البيانات مخزنة ولم يمضِ عليها يومان، نرجعها فوراً بدون أي طلب للسيرفر
+  if (cachedData && cachedTime && (now - Number(cachedTime) < twoDaysInMillis)) {
+    console.log('⚡ تم جلب الدروس من الكاش المحلي للمادة (بدون ضغط على السيرفر):', subjectId);
+    const parsed = JSON.parse(cachedData);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed;
+    }
+  }
+
+  try {
+    const query = new URLSearchParams({ subject_id: subjectId });
+    if (trackId) query.set('track_id', trackId);
+
+    console.log('🌐 جاري جلب الدروس من السيرفر...');
+    const result = await request<ApiLesson[]>(`/lessons?${query.toString()}`);
+
+    if (Array.isArray(result) && result.length > 0) {
+      setCachedLessons(subjectId, result);
+      return result;
+    }
+
+    // لو السيرفر رجع مصفوفة فارغة، نحاول إرجاع الكاش القديم إن وجد كبديل آمن
+    const cached = getCachedLessons(subjectId);
+    return cached.length > 0 ? cached : [];
+
+  } catch (error) {
+    console.error('❌ خطأ في جلب الدروس، يتم الاعتماد على الكاش المحلي:', error);
+    const cached = getCachedLessons(subjectId);
+    if (cached.length > 0) {
+      return cached;
+    }
+    throw error;
+  }
 }
 
 export async function getLessonById(lessonId: string) {
