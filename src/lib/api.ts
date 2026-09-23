@@ -288,6 +288,30 @@ export async function askLessonAI(lessonId: string, message: string, history: Ar
     body: JSON.stringify({ message, history }),
   });
 }
+// جلب بيانات الطالب (البروفايل، النقاط، المستويات، والـ Streak)
+export async function getStudentProfile(userId: string) {
+  return request<StudentProfile & { level: number; points_progress: { current: number; target: number; percentage: number } }>(
+    `/students/profile/${encodeURIComponent(userId)}`
+  );
+}
+
+// تحديث نتيجة الامتحان (النقاط، الـ Coins، والـ Streak)
+export async function submitExamResult(userId: string, isPerfectScore: boolean) {
+  return request<{ message: string; earned: { points: number; coins: number }; profile: StudentProfile }>(
+    '/students/exam-result',
+    {
+      method: 'POST',
+      body: JSON.stringify({ userId, isPerfectScore }),
+    }
+  );
+}
+
+// جلب الأخطاء الخاصة بالطالب (قسم الأخطاء)
+export async function getStudentErrors(userId: string) {
+  return request<Array<{ id: string; question_text?: string; user_answer?: string; correct_answer?: string; created_at?: string }>>(
+    `/students/errors/${encodeURIComponent(userId)}`
+  );
+}
 
 export async function getTeam() { return request<{ team: any; invitations: any[] }>('/teams'); }
 export async function getInvitations() { return request<{ invitations: any[] }>('/teams/invitations'); }

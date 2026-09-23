@@ -1,5 +1,6 @@
-import { useNavigate, useNavigation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { getStoredProfile, StudentProfile } from '../lib/api'; // استيراد دالة جلب البروفايل المحلي
 
 const menuItems = [
   { icon: '👥', label: 'فرقتي الدراسية', screen: 'teams' as const },
@@ -12,7 +13,15 @@ const menuItems = [
 ];
 
 export default function ProfileScreen() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  
+  // قراءة بيانات الطالب من الـ localStorage فوراً بدون أي طلب للسيرفر
+  const profile: StudentProfile | null = getStoredProfile();
+
+  // حساب المستوى افتراضياً بناءً على النقاط (كل 250 نقطة = لفل جديد)
+  const points = profile?.points || 1250;
+  const calculatedLevel = Math.floor(points / 250) + 1;
+
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
       <div className="flex-1 overflow-y-auto pb-24">
@@ -26,8 +35,12 @@ export default function ProfileScreen() {
 
           <div className="flex items-center gap-4 justify-end mb-5">
             <div className="text-right">
-              <h1 className="text-2xl font-black text-white">أحمد محمد</h1>
-              <div className="text-blue-200 text-sm font-medium">ثالثة إعدادي • القاهرة</div>
+              <h1 className="text-2xl font-black text-white">
+                {profile?.display_name || 'أحمد محمد'}
+              </h1>
+              <div className="text-blue-200 text-sm font-medium">
+                {profile?.grade_level ? `الصف ${profile.grade_level} الإعدادي` : 'ثالثة إعدادي'} • القاهرة
+              </div>
             </div>
             <div className="relative">
               <div
@@ -37,13 +50,13 @@ export default function ProfileScreen() {
                   border: '3px solid rgba(255,255,255,0.4)',
                 }}
               >
-                👦
+                {profile?.gender === 'girl' ? '👧' : '👦'}
               </div>
               <div
                 className="absolute -bottom-1.5 -left-1.5 px-2 py-0.5 rounded-full text-xs font-black"
                 style={{ background: '#F59E0B', color: 'white' }}
               >
-                Lvl 12
+                Lvl {calculatedLevel}
               </div>
             </div>
           </div>
@@ -51,8 +64,8 @@ export default function ProfileScreen() {
           {/* Quick stats row */}
           <div className="grid grid-cols-4 gap-2">
             {[
-              { label: 'Points', value: '1,250', icon: '🏆', color: 'rgba(255,255,255,0.15)' },
-              { label: 'Coins', value: '85', icon: '🪙', color: 'rgba(245,158,11,0.4)' },
+              { label: 'Points', value: points.toLocaleString(), icon: '🏆', color: 'rgba(255,255,255,0.15)' },
+              { label: 'Coins', value: (profile?.coins || 85).toString(), icon: '🪙', color: 'rgba(245,158,11,0.4)' },
               { label: 'Streak', value: '7🔥', icon: '', color: 'rgba(249,115,22,0.3)' },
               { label: 'دروس', value: '54', icon: '📚', color: 'rgba(255,255,255,0.15)' },
             ].map((stat) => (
@@ -76,7 +89,7 @@ export default function ProfileScreen() {
           >
             <div className="flex items-center justify-between mb-3">
               <button
-                onClick={() => navigate('gamification')}
+                onClick={() => navigate('/gamification')}
                 className="text-blue-600 text-sm font-bold"
               >
                 عرض الكل
@@ -103,10 +116,10 @@ export default function ProfileScreen() {
             className="bg-white rounded-2xl overflow-hidden"
             style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
           >
-            {menuItems.map((item, i) => (
+            {menuItems.map((item) => (
               <button
                 key={item.label}
-                onClick={() => navigate(item.screen)}
+                onClick={() => navigate(`/${item.screen}`)}
                 className="w-full flex items-center gap-3 px-4 py-4 text-right active:bg-slate-50 transition-colors border-b border-slate-50 last:border-0"
               >
                 <span className="text-slate-300 text-base">‹</span>
@@ -175,7 +188,7 @@ export default function ProfileScreen() {
         </div>
       </div>
 
-      <BottomNav active="profile"  />
+      <BottomNav active="profile" />
     </div>
   );
 }

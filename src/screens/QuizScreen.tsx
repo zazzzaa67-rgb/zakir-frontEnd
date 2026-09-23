@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LessonQuestion } from '../lib/api';
-
+import { LessonQuestion , submitExamResult, getStoredProfile  } from '../lib/api';
 const fallbackQuestions = [
   {
     question: 'إيه الحل الصح لمعادلة: 2x + 6 = 14؟',
@@ -76,14 +75,33 @@ export default function QuizScreen() {
   };
 
   const handleNext = () => {
-    if (current < questions.length - 1) {
-      setCurrent(current + 1);
-      setSelected(null);
-      setAnswered(false);
-    } else {
-      setShowResults(true);
-    }
-  };
+      if (current < questions.length - 1) {
+        setCurrent(current + 1);
+        setSelected(null);
+        setAnswered(false);
+      } else {
+        setShowResults(true);
+        
+        // إرسال النتيجة للسيرفر وتحديث الكاش المحلي
+        const profile = getStoredProfile();
+        if (profile) {
+          const percentage = Math.round(((score + (selected === q.correct ? 1 : 0)) / questions.length) * 100);
+          const isPerfectScore = percentage === 100; // لو قفل الامتحان (100%)
+
+          submitExamResult(profile.id, isPerfectScore)
+            .then((res) => {
+              // تحديث البيانات محلياً في الـ localStorage لتظهر فوراً في البروفايل
+              if (res.profile) {
+                localStorage.setItem('zakker_profile', JSON.stringify(res.profile));
+              }
+              console.log('✅ تم تحديث النقاط والـ Streak بنجاح:', res);
+            })
+            .catch((err) => {
+              console.error('❌ خطأ أثناء تحديث نتيجة الامتحان:', err);
+            });
+        }
+      }
+    };
 
   if (showResults) {
     const percentage = Math.round((score / questions.length) * 100);
