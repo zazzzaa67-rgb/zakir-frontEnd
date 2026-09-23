@@ -9,6 +9,7 @@ export type StudentProfile = {
   gender: 'boy' | 'girl';
   grade_level: 1 | 2 | 3;
   track_id: string;
+  streak?: number;
   points: number;
   coins: number;
 };

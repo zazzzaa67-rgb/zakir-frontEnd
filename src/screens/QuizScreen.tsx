@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LessonQuestion, submitExamResult, getStoredProfile } from '../lib/api';
+import { updateLocalPointsAndCoins, setCachedProfile } from '../lib/profileManager';
 
 const fallbackQuestions = [
   {
@@ -28,7 +29,6 @@ export default function QuizScreen() {
   const location = useLocation();
   const state = (location.state as LocationState) || {};
 
-  // جلب الأسئلة الحقيقية المرسلة من الدرس أو استخدام البديلة لو غير موجودة
   const lessonQuestions = state.questions;
   const questions = lessonQuestions?.length
     ? lessonQuestions.map((item) => ({
@@ -67,17 +67,22 @@ export default function QuizScreen() {
       setAnswered(false);
     } else {
       setShowResults(true);
-      
-      // إرسال النتيجة الحقيقية للسيرفر وتحديث الكاش المحلي
+
+      // 1. حساب النقاط والـ Coins بناءً على القواعد
+      const earnedPoints = 10;
+      const isPerfectScore = score === questions.length;
+      const earnedCoins = isPerfectScore ? 5 : 3;
+
+      // 2. تحديث التخزين المحلي فوراً
+      updateLocalPointsAndCoins(earnedPoints, earnedCoins);
+
+      // 3. إرسال النتيجة الحقيقية للسيرفر
       const profile = getStoredProfile();
       if (profile) {
-        const percentage = Math.round((score / questions.length) * 100);
-        const isPerfectScore = percentage === 100;
-
         submitExamResult(profile.id, isPerfectScore)
           .then((res) => {
             if (res.profile) {
-              localStorage.setItem('zakker_profile', JSON.stringify(res.profile));
+              setCachedProfile(res.profile);
             }
             console.log('✅ تم تحديث النقاط بنجاح:', res);
           })
@@ -90,6 +95,9 @@ export default function QuizScreen() {
 
   if (showResults) {
     const percentage = Math.round((score / questions.length) * 100);
+    const isPerfect = score === questions.length;
+    const earnedCoins = isPerfect ? 5 : 3;
+
     return (
       <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
         <div
@@ -118,14 +126,16 @@ export default function QuizScreen() {
             </div>
 
             <div
-              className="text-3xl font-black mb-1"
+              className="text-2xl font-black mb-1 flex items-center gap-2 justify-center"
               style={{
                 background: 'linear-gradient(135deg, #1E6FF0, #7C3AED)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}
             >
-              +{score * 10} Points 🏆
+              <span>+10 Points 🏆</span>
+              <span>•</span>
+              <span>+{earnedCoins} Coins 🪙</span>
             </div>
             <p className="text-slate-600 font-medium">
               {percentage >= 80 ? 'ممتاز! أداؤك رائع 🌟' : 'كويس! ممكن تتحسن أكتر 💪'}
@@ -157,7 +167,7 @@ export default function QuizScreen() {
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 bg-white/20 rounded-xl px-3 py-1.5">
-            <span className="text-white/80 text-xs font-semibold">🏆 +{score * 10}</span>
+            <span className="text-white/80 text-xs font-semibold">🏆 +10 Points</span>
           </div>
           <button
             onClick={() => navigate('/home')}

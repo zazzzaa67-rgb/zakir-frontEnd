@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
-import { getStoredProfile, StudentProfile } from '../lib/api'; // استيراد دالة جلب البروفايل المحلي
+import { StudentProfile } from '../lib/api';
+import { getCachedProfile } from '../lib/profileManager';
 
 const menuItems = [
   { icon: '👥', label: 'فرقتي الدراسية', screen: 'teams' as const },
@@ -15,11 +17,23 @@ const menuItems = [
 export default function ProfileScreen() {
   const navigate = useNavigate();
   
-  // قراءة بيانات الطالب من الـ localStorage فوراً بدون أي طلب للسيرفر
-  const profile: StudentProfile | null = getStoredProfile();
+  // 1. قراءة البيانات من LocalStorage بشكل لحظي وآنوي
+  const [profile, setProfile] = useState<StudentProfile | null>(() => getCachedProfile());
 
-  // حساب المستوى افتراضياً بناءً على النقاط (كل 250 نقطة = لفل جديد)
-  const points = profile?.points || 1250;
+  useEffect(() => {
+    // 2. الاستماع لأي تغيير يحدث في النقاط/البيانات من أي صفحة أخرى
+    const handleProfileChange = () => {
+      setProfile(getCachedProfile());
+    };
+
+    window.addEventListener('profileUpdated', handleProfileChange);
+    return () => window.removeEventListener('profileUpdated', handleProfileChange);
+  }, []);
+
+  // حساب القيم المباشرة
+  const points = profile?.points || 0;
+  const coins = profile?.coins || 0;
+  const streak = profile?.streak || 0;
   const calculatedLevel = Math.floor(points / 250) + 1;
 
   return (
@@ -30,16 +44,19 @@ export default function ProfileScreen() {
           className="px-5 pt-12 pb-8 relative overflow-hidden"
           style={{ background: 'linear-gradient(160deg, #1E6FF0 0%, #7C3AED 100%)' }}
         >
-          <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10"
-            style={{ background: 'white', transform: 'translate(30%, -30%)' }} />
+          <div
+            className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10"
+            style={{ background: 'white', transform: 'translate(30%, -30%)' }}
+          />
 
           <div className="flex items-center gap-4 justify-end mb-5">
             <div className="text-right">
               <h1 className="text-2xl font-black text-white">
-                {profile?.display_name || 'أحمد محمد'}
+                {profile?.display_name || 'طالب ذاكر معي'}
               </h1>
               <div className="text-blue-200 text-sm font-medium">
-                {profile?.grade_level ? `الصف ${profile.grade_level} الإعدادي` : 'ثالثة إعدادي'} • القاهرة
+                {profile?.grade_level ? `الصف ${profile.grade_level}` : 'المرحلة الدراسية'}
+                {profile?.track_id ? ` • ${profile.track_id}` : ''}
               </div>
             </div>
             <div className="relative">
@@ -65,9 +82,9 @@ export default function ProfileScreen() {
           <div className="grid grid-cols-4 gap-2">
             {[
               { label: 'Points', value: points.toLocaleString(), icon: '🏆', color: 'rgba(255,255,255,0.15)' },
-              { label: 'Coins', value: (profile?.coins || 85).toString(), icon: '🪙', color: 'rgba(245,158,11,0.4)' },
-              { label: 'Streak', value: '7🔥', icon: '', color: 'rgba(249,115,22,0.3)' },
-              { label: 'دروس', value: '54', icon: '📚', color: 'rgba(255,255,255,0.15)' },
+              { label: 'Coins', value: coins.toLocaleString(), icon: '🪙', color: 'rgba(245,158,11,0.4)' },
+              { label: 'Streak', value: `${streak}🔥`, icon: '', color: 'rgba(249,115,22,0.3)' },
+              { label: 'الصف', value: `${profile?.grade_level || 1}`, icon: '📚', color: 'rgba(255,255,255,0.15)' },
             ].map((stat) => (
               <div
                 key={stat.label}
@@ -155,31 +172,6 @@ export default function ProfileScreen() {
                       : '#F8FAFC',
                   }}
                 >
-                  {item.icon}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Settings section */}
-        <div className="px-5 mt-3 mb-4">
-          <div
-            className="bg-white rounded-2xl overflow-hidden"
-            style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
-          >
-            {[
-              { icon: '⚙️', label: 'الإعدادات' },
-              { icon: '🎨', label: 'التخصيص' },
-              { icon: '❓', label: 'المساعدة والدعم' },
-            ].map((item) => (
-              <button
-                key={item.label}
-                className="w-full flex items-center gap-3 px-4 py-4 text-right active:bg-slate-50 transition-colors border-b border-slate-50 last:border-0"
-              >
-                <span className="text-slate-300 text-base">‹</span>
-                <span className="flex-1 font-bold text-slate-700 text-base text-right">{item.label}</span>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-slate-50 flex-shrink-0">
                   {item.icon}
                 </div>
               </button>
