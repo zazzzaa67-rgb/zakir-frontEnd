@@ -280,48 +280,43 @@ export async function getLessonsBySubject(subjectId: string, trackId?: string): 
 
 export async function getLessonById(lessonId: string): Promise<LessonDetails> {
   try {
-    // 1. محاولة جلب الدرس مباشرة من السيرفر
-    return await request<LessonDetails>(`/lessons/${encodeURIComponent(lessonId)}`);
+    // 1. محاولة جلب البيانات الحقيقية الكاملة من السيرفر
+    const serverLesson = await request<LessonDetails>(`/lessons/${encodeURIComponent(lessonId)}`);
+    return serverLesson;
   } catch (error) {
-    console.warn(`⚠️ فشل جلب الدرس مباشرة (${lessonId}) من السيرفر، جاري البحث في الكاش المحلي...`, error);
+    console.warn(`⚠️ تعذر جلب الدرس (${lessonId}) من السيرفر، جاري استخراج البيانات والأسئلة الحقيقية من الكاش...`, error);
 
-    // 2. البحث في جميع دروس الكاش المحفوظة محلياً لاستخراج الدرس المطابق
+    // 2. البحث عن الدرس في الكاش المحلي لاستخراج الأسئلة الحقيقية المخزنة معه
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith('zakker_cached_lessons_')) {
         try {
-          const cachedLessons = JSON.parse(localStorage.getItem(key) || '[]') as ApiLesson[];
+          const cachedLessons = JSON.parse(localStorage.getItem(key) || '[]') as any[];
           const found = cachedLessons.find((l) => l.id === lessonId || l.lesson_title === lessonId);
+          
           if (found) {
-            console.log('✅ تم العثور على الدرس في الكاش المحلي:', found.lesson_title);
+            // استخدام الأسئلة الحقيقية المخزنة داخل content_json أو quiz أو homework أو exam
+            const content = found.content_json || {};
+            const realQuiz = content.quiz || content.exam || content.homework || found.quiz || [];
+
             return {
               ...found,
               content_json: {
-                summary: found.lesson_title,
-                detailed_explanation: 'شرح الدرس المستخرج من محتوى المادة التعليمية...',
-                key_points: ['نقطة رئيسية للدرس', 'مفهوم أساسي'],
-                quiz: [
-                  {
-                    question: `سؤال تقييمي على درس: ${found.lesson_title}`,
-                    options: ['الإجابة الأولى', 'الإجابة الصحيحة', 'الإجابة الثالثة', 'الإجابة الرابعة'],
-                    correct_index: 1,
-                    explanation: 'هذه هي الإجابة الصحيحة بناءً على محتوى الدرس الحقيقي.'
-                  }
-                ]
+                ...content,
+                quiz: realQuiz,
               }
             };
           }
         } catch (e) {
-          console.error('خطأ في قراءة الكاش:', e);
+          console.error('خطأ أثناء قراءة أسئلة الكاش:', e);
         }
       }
     }
 
-    // 3. إذا لم يوجد في الكاش، نعيد خطأ واضح أو كائن آمن بدلاً من انهيار التطبيق
+    // إذا لم تتوفر أسئلة في الكاش أيضاً، يتم رفع الخطأ الأصلي لمعالجة الـ 404 في السيرفر
     throw error;
   }
 }
-
 export async function askLessonAI(lessonId: string, message: string, history: Array<{ role: 'user' | 'model'; text: string }>) {
   return request<{ answer: string }>(`/lessons/${encodeURIComponent(lessonId)}/chat`, {
     method: 'POST',
