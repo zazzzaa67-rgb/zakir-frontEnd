@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LessonQuestion , submitExamResult, getStoredProfile  } from '../lib/api';
+import { LessonQuestion, submitExamResult, getStoredProfile } from '../lib/api';
+
 const fallbackQuestions = [
   {
     question: 'إيه الحل الصح لمعادلة: 2x + 6 = 14؟',
@@ -13,24 +14,6 @@ const fallbackQuestions = [
     options: ['x = 1', 'x = 5', 'x = 7', 'x = 9'],
     correct: 2,
     explanation: 'نجمع 9 على الطرفين: 3x = 21، ثم نقسم على 3: x = 7 ✓',
-  },
-  {
-    question: 'أي من التالي معادلة خطية؟',
-    options: ['x² + 1 = 0', '2x + 3 = 7', 'x³ = 8', 'x² - x = 0'],
-    correct: 1,
-    explanation: 'المعادلة الخطية هي معادلة الدرجة الأولى، يعني المتغير مش مرفوع لأس أعلى من 1.',
-  },
-  {
-    question: 'معادلة x/4 = 5، قيمة x هي:',
-    options: ['x = 1.25', 'x = 9', 'x = 20', 'x = 25'],
-    correct: 2,
-    explanation: 'نضرب الطرفين في 4: x = 5 × 4 = 20 ✓',
-  },
-  {
-    question: 'لو 5x + 10 = 35، إيه x؟',
-    options: ['x = 3', 'x = 5', 'x = 7', 'x = 9'],
-    correct: 1,
-    explanation: 'نطرح 10: 5x = 25، نقسم على 5: x = 5 ✓',
   },
 ];
 
@@ -45,6 +28,7 @@ export default function QuizScreen() {
   const location = useLocation();
   const state = (location.state as LocationState) || {};
 
+  // جلب الأسئلة الحقيقية المرسلة من الدرس أو استخدام البديلة لو غير موجودة
   const lessonQuestions = state.questions;
   const questions = lessonQuestions?.length
     ? lessonQuestions.map((item) => ({
@@ -71,43 +55,43 @@ export default function QuizScreen() {
     if (answered) return;
     setSelected(idx);
     setAnswered(true);
-    if (idx === q.correct) setScore(score + 1);
+    if (idx === q.correct) {
+      setScore((prevScore) => prevScore + 1);
+    }
   };
 
   const handleNext = () => {
-      if (current < questions.length - 1) {
-        setCurrent(current + 1);
-        setSelected(null);
-        setAnswered(false);
-      } else {
-        setShowResults(true);
-        
-        // إرسال النتيجة للسيرفر وتحديث الكاش المحلي
-        const profile = getStoredProfile();
-        if (profile) {
-          const percentage = Math.round(((score + (selected === q.correct ? 1 : 0)) / questions.length) * 100);
-          const isPerfectScore = percentage === 100; // لو قفل الامتحان (100%)
+    if (current < questions.length - 1) {
+      setCurrent(current + 1);
+      setSelected(null);
+      setAnswered(false);
+    } else {
+      setShowResults(true);
+      
+      // إرسال النتيجة الحقيقية للسيرفر وتحديث الكاش المحلي
+      const profile = getStoredProfile();
+      if (profile) {
+        const percentage = Math.round((score / questions.length) * 100);
+        const isPerfectScore = percentage === 100;
 
-          submitExamResult(profile.id, isPerfectScore)
-            .then((res) => {
-              // تحديث البيانات محلياً في الـ localStorage لتظهر فوراً في البروفايل
-              if (res.profile) {
-                localStorage.setItem('zakker_profile', JSON.stringify(res.profile));
-              }
-              console.log('✅ تم تحديث النقاط والـ Streak بنجاح:', res);
-            })
-            .catch((err) => {
-              console.error('❌ خطأ أثناء تحديث نتيجة الامتحان:', err);
-            });
-        }
+        submitExamResult(profile.id, isPerfectScore)
+          .then((res) => {
+            if (res.profile) {
+              localStorage.setItem('zakker_profile', JSON.stringify(res.profile));
+            }
+            console.log('✅ تم تحديث النقاط بنجاح:', res);
+          })
+          .catch((err) => {
+            console.error('❌ خطأ أثناء تحديث النتيجة:', err);
+          });
       }
-    };
+    }
+  };
 
   if (showResults) {
     const percentage = Math.round((score / questions.length) * 100);
     return (
       <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
-        {/* Header */}
         <div
           className="px-5 pt-12 pb-6"
           style={{ background: 'linear-gradient(160deg, #1E6FF0 0%, #7C3AED 100%)' }}
@@ -117,7 +101,6 @@ export default function QuizScreen() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-6 pb-24">
-          {/* Score circle */}
           <div className="flex flex-col items-center mb-6">
             <div
               className="w-36 h-36 rounded-full flex flex-col items-center justify-center mb-4 shadow-lg"
@@ -126,7 +109,6 @@ export default function QuizScreen() {
                   percentage >= 70
                     ? 'linear-gradient(135deg, #10B981, #059669)'
                     : 'linear-gradient(135deg, #F97316, #EF4444)',
-                boxShadow: `0 8px 32px ${percentage >= 70 ? 'rgba(16,185,129,0.4)' : 'rgba(249,115,22,0.4)'}`,
               }}
             >
               <div className="text-4xl font-black text-white">
@@ -146,43 +128,11 @@ export default function QuizScreen() {
               +{score * 10} Points 🏆
             </div>
             <p className="text-slate-600 font-medium">
-              {percentage >= 80
-                ? 'ممتاز! أداؤك رائع 🌟'
-                : percentage >= 60
-                ? 'كويس! ممكن تتحسن أكتر 💪'
-                : 'مش مشكلة، تعال نراجع الأخطاء 📚'}
+              {percentage >= 80 ? 'ممتاز! أداؤك رائع 🌟' : 'كويس! ممكن تتحسن أكتر 💪'}
             </p>
           </div>
 
-          {/* Suggestions */}
-          {percentage < 100 && (
-            <div
-              className="rounded-2xl p-4 mb-4"
-              style={{ background: '#FFF7ED', border: '1.5px solid #FDE68A' }}
-            >
-              <div className="flex items-center gap-2 justify-end mb-2">
-                <h3 className="font-black text-orange-800">اقتراحات للتحسين</h3>
-                <span className="text-xl">💡</span>
-              </div>
-              <ul className="text-right space-y-1.5">
-                {score < questions.length && (
-                  <li className="text-orange-700 text-sm font-medium">• راجع نقاط ضعف الاختبار</li>
-                )}
-                <li className="text-orange-700 text-sm font-medium">• اتدرب على مزيد من الأمثلة</li>
-                <li className="text-orange-700 text-sm font-medium">• اسأل AI لو في نقطة مش واضحة</li>
-              </ul>
-            </div>
-          )}
-
-          {/* Action buttons */}
           <div className="flex flex-col gap-3">
-            <button
-              onClick={() => navigate('/mistakes')}
-              className="w-full py-4 rounded-2xl font-bold text-base cursor-pointer active:scale-95 transition-transform"
-              style={{ background: '#EFF6FF', color: '#1E6FF0', border: '1.5px solid #BFDBFE' }}
-            >
-              ارجع للأخطاء ❌
-            </button>
             <button
               onClick={() => navigate('/ai-lesson', { state: { lesson, lessonId } })}
               className="w-full py-4 rounded-2xl text-white font-bold text-base cursor-pointer active:scale-95 transition-transform"
@@ -201,7 +151,6 @@ export default function QuizScreen() {
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
-      {/* Header */}
       <div
         className="px-5 pt-12 pb-5"
         style={{ background: 'linear-gradient(160deg, #1E6FF0 0%, #0D4FB5 100%)' }}
@@ -212,7 +161,7 @@ export default function QuizScreen() {
           </div>
           <button
             onClick={() => navigate('/home')}
-            className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+            className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center cursor-pointer"
           >
             <span className="text-white font-bold">×</span>
           </button>
@@ -220,7 +169,6 @@ export default function QuizScreen() {
 
         <h1 className="text-xl font-black text-white text-right mb-3">اختبر نفسك 🧠</h1>
 
-        {/* Progress */}
         <div className="flex items-center gap-3">
           <span className="text-white/60 text-sm font-medium">{questions.length}</span>
           <div className="flex-1 h-2 bg-white/20 rounded-full overflow-hidden">
@@ -234,18 +182,15 @@ export default function QuizScreen() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-4 pb-24">
-        {/* Question card */}
-        <div className="bg-white rounded-2xl p-5 mb-4" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+        <div className="bg-white rounded-2xl p-5 mb-4 shadow-sm">
           <p className="text-slate-900 font-black text-lg text-right leading-relaxed">{q.question}</p>
         </div>
 
-        {/* Options */}
         <div className="flex flex-col gap-3 mb-4">
           {q.options.map((option, idx) => {
             let btnStyle: React.CSSProperties = {
               background: 'white',
               border: '1.5px solid #F1F5F9',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
             };
             let textColor = '#0F172A';
 
@@ -264,7 +209,7 @@ export default function QuizScreen() {
                 key={idx}
                 disabled={answered}
                 onClick={() => handleAnswer(idx)}
-                className="w-full py-4 px-5 rounded-2xl text-right font-bold text-base flex items-center justify-between transition-all cursor-pointer disabled:cursor-default active:scale-98"
+                className="w-full py-4 px-5 rounded-2xl text-right font-bold text-base flex items-center justify-between transition-all cursor-pointer disabled:cursor-default"
                 style={btnStyle}
               >
                 <span style={{ color: textColor }}>
@@ -276,7 +221,6 @@ export default function QuizScreen() {
           })}
         </div>
 
-        {/* Feedback */}
         {answered && (
           <div
             className="rounded-2xl p-4 mb-4 transition-all"
@@ -285,18 +229,10 @@ export default function QuizScreen() {
               border: `1.5px solid ${isCorrect ? '#6EE7B7' : '#FDE68A'}`,
             }}
           >
-            <div className="flex items-center gap-2 justify-end mb-2">
-              <div className="font-black text-base" style={{ color: isCorrect ? '#065F46' : '#92400E' }}>
-                {isCorrect ? 'إجابة صحيحة! ✓' : 'مش مشكلة! تعال نفهمها 🤔'}
-              </div>
-              <span className="text-2xl">{isCorrect ? '🎉' : '💪'}</span>
+            <div className="font-black text-base mb-1" style={{ color: isCorrect ? '#065F46' : '#92400E' }}>
+              {isCorrect ? 'إجابة صحيحة! ✓' : 'إجابة خاطئة 🤔'}
             </div>
-            {isCorrect && (
-              <div className="bg-green-600 text-white text-sm font-bold px-3 py-1 rounded-lg inline-block">
-                +10 Points
-              </div>
-            )}
-            <p className="text-sm mt-2 font-medium text-right" style={{ color: isCorrect ? '#065F46' : '#92400E' }}>
+            <p className="text-sm font-medium text-right" style={{ color: isCorrect ? '#065F46' : '#92400E' }}>
               {q.explanation}
             </p>
           </div>
@@ -305,7 +241,7 @@ export default function QuizScreen() {
         {answered && (
           <button
             onClick={handleNext}
-            className="w-full py-4 rounded-2xl text-white font-bold text-lg cursor-pointer active:scale-95 transition-transform"
+            className="w-full py-4 rounded-2xl text-white font-bold text-lg cursor-pointer"
             style={{
               background: 'linear-gradient(135deg, #1E6FF0, #7C3AED)',
               boxShadow: '0 8px 24px rgba(30,111,240,0.4)',
