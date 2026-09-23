@@ -14,12 +14,17 @@ const quickActions = [
 
 export default function HomeScreen() {
   const navigate = useNavigate();
-  const profile = getStoredProfile();
-  const firstName = profile?.display_name?.split(' ')[0] || 'يا بطل';
+  
+  // 1. إضافة State للملف الشخصي ليتم تحديث الشاشة تلقائياً
+  const [profile, setProfile] = useState<any>(null);
   const [team, setTeam] = useState<any>(null);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
 
   useEffect(() => {
+    // 2. تحديث بيانات البروفايل عند فتح الشاشة
+    const currentProfile = getStoredProfile();
+    setProfile(currentProfile);
+
     Promise.all([getTeam(), getLeaderboard()])
       .then(([teamResult, leaderboardResult]) => {
         setTeam(teamResult.team);
@@ -29,6 +34,8 @@ export default function HomeScreen() {
         setLeaderboard([]);
       });
   }, []);
+
+  const firstName = profile?.display_name?.split(' ')[0] || 'يا بطل';
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF] text-right">
@@ -88,7 +95,9 @@ export default function HomeScreen() {
                 <span className="text-white/80 text-xs font-semibold tracking-wide uppercase">Points</span>
               </div>
               <div className="text-3xl font-black text-white leading-none">{profile?.points ?? 0}</div>
-              <div className="text-white/60 text-xs mt-1 font-medium">Level 12 • مستواك</div>
+              <div className="text-white/60 text-xs mt-1 font-medium">
+                Level {Math.floor((profile?.points ?? 0) / 100) + 1} • مستواك
+              </div>
             </div>
 
             {/* Coins card */}
