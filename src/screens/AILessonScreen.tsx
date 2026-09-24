@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
-import { getLessonById, LessonDetails } from '../lib/api';
+import { getLessonById, LessonDetails, checkAndIncrementAiLimit } from '../lib/api';
 
 const modes = [
   { icon: '📄', label: 'ملف الدرس PDF', screen: 'pdf' as const },
@@ -83,21 +83,25 @@ export default function AILessonScreen() {
   };
 
   // إرسال السؤال ومعالجة البث المباشر (Streaming)
+  // إرسال السؤال ومعالجة البث المباشر (Streaming) مع فحص الحد اليومي
   const handleSend = async (textToSend?: string) => {
     const message = (textToSend || userInput).trim();
     if (!message || chatLoading) return;
-
     if (!lessonId) {
       setChatError('يرجى فتح الدرس من قائمة الدروس أولاً');
       return;
     }
-
+    // 🔒 التحقق من الحد اليومي (5 رسائل/يوم)
+    const { allowed } = checkAndIncrementAiLimit();
+    if (!allowed) {
+      setChatError('🔒 وصلت للحد الأقصى اليومي (5 رسائل يومياً للذكاء الاصطناعي). عد غداً لأسئلة جديدة!');
+      return;
+    }
     // إعداد تاريخ المحادثة للسيرفر
     const historyPayload = messages.map((m) => ({
       role: m.role,
       text: m.text,
     }));
-
     // إدخال رسالة الطالب ورسالة فارغة للـ AI ليتم إكمالها فورياً
     setMessages((prev) => [
       ...prev,
@@ -111,7 +115,6 @@ export default function AILessonScreen() {
     try {
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://zakir-backend.vercel.app/api';
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      // تنظيف الـ lessonId من أي نقط زائدة لضمان صحة الـ URL
       const cleanLessonId = lessonId?.replace(/\.{2,}/g, '.').trim();
       const response = await fetch(`${API_BASE_URL}/lessons/${cleanLessonId}/chat`, {
         method: 'POST',
@@ -137,7 +140,6 @@ export default function AILessonScreen() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
 
-      // قراءة الـ Chunks المباشرة وتجميع النص في أحدث رسالة
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -159,7 +161,6 @@ export default function AILessonScreen() {
     } catch (error: any) {
       console.error('Chat AI Error:', error);
       setChatError(error.message || 'حدث خطأ أثناء التواصل مع المعلم الذكي');
-      // إزالة الرسالة الفارغة في حالة الخطأ
       setMessages((prev) => prev.filter((m) => m.text.trim() !== ''));
     } finally {
       setChatLoading(false);
@@ -284,16 +285,37 @@ export default function AILessonScreen() {
             );
           })}
 
-          {/* Quick response buttons */}
+{/* Quick response buttons - أزرار سريعة تجيب مباشرة */}
           <div className="flex flex-wrap gap-2 justify-start mt-2">
             {[
-              { label: '👍 أيوه فهمت', text: 'اديني مثال كمان من الدرس' },
-              { label: '🤔 اشرحها تاني', text: 'اشرح النقطة دي بطريقة أبسط' },
-              { label: '❓ ملخص الدرس', text: 'ممكن تلخصلي الدرس في نقاط سريعة؟' },
+              { 
+                label: '👍 أيوه فهمت', 
+                action: () => setMessages((prev) => [
+                  ...prev, 
+                  { role: 'user', text: 'أيوه فهمت 👍' }, 
+                  { role: 'model', text: 'ممتاز جداً يا بطل! 🌟 تقدر دلوقتي تدخل تحل الامتحان أو الواجب لتأكيد فهمك.' }
+                ])
+              },
+              { 
+                label: '🤔 اشرحها تاني', 
+                action: () => setMessages((prev) => [
+                  ...prev, 
+                  { role: 'user', text: 'اشرحها تاني 🧐' }, 
+                  { role: 'model', text: lessonDetails?.content_json?.detailed_explanation || 'إليك شرح الدرس بطريقة مبسطة...' }
+                ])
+              },
+              { 
+                label: '❓ ملخص الدرس', 
+                action: () => setMessages((prev) => [
+                  ...prev, 
+                  { role: 'user', text: 'ملخص الدرس ❓' }, 
+                  { role: 'model', text: lessonDetails?.content_json?.summary || 'إليك ملخص أفكار الدرس الرئيسية...' }
+                ])
+              },
             ].map((btn) => (
               <button
                 key={btn.label}
-                onClick={() => void handleSend(btn.text)}
+                onClick={btn.action}
                 disabled={chatLoading}
                 className="px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 transition-transform cursor-pointer bg-white text-blue-600 border border-blue-100 shadow-sm disabled:opacity-50"
               >

@@ -349,6 +349,49 @@ export async function getStudentErrors(userId: string) {
   );
 }
 
+// ==========================================
+// 1. تحديث بيانات البروفايل محلياً بدون تصفير النقاط والـ Coins
+// ==========================================
+export function updateStoredProfile(updatedFields: Partial<StudentProfile>): StudentProfile | null {
+  const current = getStoredProfile();
+  if (!current) return null;
+  const newProfile = { ...current, ...updatedFields };
+  localStorage.setItem('zakker_profile', JSON.stringify(newProfile));
+  return newProfile;
+}
+export async function fetchAndUpdateProfile(): Promise<StudentProfile | null> {
+  const current = getStoredProfile();
+  if (!current?.id) return current;
+  try {
+    const updatedProfile = await request<StudentProfile>(`/students/profile/${encodeURIComponent(current.id)}`);
+    if (updatedProfile) {
+      localStorage.setItem('zakker_profile', JSON.stringify(updatedProfile));
+      return updatedProfile;
+    }
+  } catch (error) {
+    console.warn('⚠️ تعذر تحديث البروفايل من السيرفر، يتم الاعتماد على الكاش المحلي:', error);
+  }
+  return current;
+}
+
+// ==========================================
+// 2. التحكم في الحد اليومي للـ AI (5 رسائل في اليوم)
+// ==========================================
+export function checkAndIncrementAiLimit(): { allowed: boolean; remaining: number } {
+  const MAX_DAILY = 5;
+  const today = new Date().toISOString().split('T')[0];
+  const storedData = localStorage.getItem('zakker_ai_usage');
+  let usage = storedData ? JSON.parse(storedData) : { date: today, count: 0 };
+  if (usage.date !== today) {
+    usage = { date: today, count: 0 };
+  }
+  if (usage.count >= MAX_DAILY) {
+    return { allowed: false, remaining: 0 };
+  }
+  usage.count += 1;
+  localStorage.setItem('zakker_ai_usage', JSON.stringify(usage)); 
+  return { allowed: true, remaining: MAX_DAILY - usage.count };
+}
 export async function getTeam() { return request<{ team: any; invitations: any[] }>('/teams'); }
 export async function getInvitations() { return request<{ invitations: any[] }>('/teams/invitations'); }
 export async function getLeaderboard() { return request<{ teams: any[] }>('/teams/leaderboard'); }
