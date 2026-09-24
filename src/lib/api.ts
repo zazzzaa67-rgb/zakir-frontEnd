@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 const configuredApiUrl = import.meta.env.VITE_API_URL ?? 'https://zakir-backend.vercel.app/api';
 const API_URL = configuredApiUrl.replace(/\/$/, '').endsWith('/api')
   ? configuredApiUrl.replace(/\/$/, '')
@@ -37,10 +39,11 @@ export type ApiLesson = {
   coins_cost: number;
   order_index: number;
   generation_status: string;
-  is_unlocked?: boolean; // 👈 أضف هذا السطر
-  status?: string;       // 👈 أضف هذا السطر
+  is_unlocked?: boolean;
+  status?: string;
   books?: { id: string; title: string; source_url?: string | null; status: string };
 };
+
 export type LessonQuestion = {
   question?: string;
   options?: string[];
@@ -118,6 +121,7 @@ async function requestOnce<T>(path: string, options: RequestInit = {}): Promise<
     },
   });
 }
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   let response = await requestOnce(path, options);
   if (response.status === 401 && !path.startsWith('/auth/')) {
@@ -136,6 +140,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
   return body as T;
 }
+
 export async function signIn(email: string, password: string) {
   const result = await request<{ accessToken: string; refreshToken: string; profile: StudentProfile }>('/auth/signin', {
     method: 'POST', body: JSON.stringify({ email, password }),
@@ -181,34 +186,21 @@ export async function getSubjectsByTrack(trackId: string): Promise<Subject[]> {
   }
 
   try {
-    // إرسال الطلب إلى الخادم
     const result = await request<Subject[]>(`/subjects?track_id=${encodeURIComponent(trackId)}`);
-    
-    console.log('✅ المواد المستقبلة من السيرفر:', result);
-
     if (Array.isArray(result) && result.length > 0) {
-      // 1. تحديث الكاش تلقائياً فور نجاح الجلب
       setCachedSubjects(result);
       return result;
     }
-
-    // إذا كانت النتيجة فارغة من السيرفر، نعيد الكاش القديم
     const cached = getCachedSubjects();
     return cached.length > 0 ? cached : [];
-
   } catch (error) {
     console.error('❌ خطأ أثناء جلب المواد، يتم استخدام الكاش المحلي:', error);
-    
-    // 2. عند فشل الاتصال بالسيرفر (404 / Connection Reset)، إرجاع الكاش بدلاً من رمي خطأ يمسح الشاشة
     const cached = getCachedSubjects();
-    if (cached.length > 0) {
-      return cached;
-    }
-
+    if (cached.length > 0) return cached;
     throw error;
   }
 }
-// 1. دوال مساعدة لحفظ وقراءة الكاش المحلي للدروس (تظل صالحة لمدة يومين)
+
 export function getCachedLessons(subjectId: string): ApiLesson[] {
   try {
     const cached = localStorage.getItem(`zakker_cached_lessons_${subjectId}`);
@@ -229,7 +221,6 @@ export function setCachedLessons(subjectId: string, lessons: ApiLesson[]) {
   }
 }
 
-// 2. الدالة المُحدثة لجلب الدروس (مع الكاش ذو صلاحية اليومين وتوفير السيرفر)
 export async function getLessonsBySubject(subjectId: string, trackId?: string): Promise<ApiLesson[]> {
   if (!subjectId) {
     console.error('❌ subject_id غير موجود');
@@ -242,11 +233,9 @@ export async function getLessonsBySubject(subjectId: string, trackId?: string): 
   const cachedTime = localStorage.getItem(cacheTimeKey);
 
   const now = Date.now();
-  const twoDaysInMillis = 2 * 24 * 60 * 60 * 1000; // يومين بالمللي ثانية (48 ساعة)
+  const twoDaysInMillis = 2 * 24 * 60 * 60 * 1000;
 
-  // لو البيانات مخزنة ولم يمضِ عليها يومان، نرجعها فوراً بدون أي طلب للسيرفر
   if (cachedData && cachedTime && (now - Number(cachedTime) < twoDaysInMillis)) {
-    console.log('⚡ تم جلب الدروس من الكاش المحلي للمادة (بدون ضغط على السيرفر):', subjectId);
     const parsed = JSON.parse(cachedData);
     if (Array.isArray(parsed) && parsed.length > 0) {
       return parsed;
@@ -257,7 +246,6 @@ export async function getLessonsBySubject(subjectId: string, trackId?: string): 
     const query = new URLSearchParams({ subject_id: subjectId });
     if (trackId) query.set('track_id', trackId);
 
-    console.log('🌐 جاري جلب الدروس من السيرفر...');
     const result = await request<ApiLesson[]>(`/lessons?${query.toString()}`);
 
     if (Array.isArray(result) && result.length > 0) {
@@ -265,29 +253,21 @@ export async function getLessonsBySubject(subjectId: string, trackId?: string): 
       return result;
     }
 
-    // لو السيرفر رجع مصفوفة فارغة، نحاول إرجاع الكاش القديم إن وجد كبديل آمن
     const cached = getCachedLessons(subjectId);
     return cached.length > 0 ? cached : [];
-
   } catch (error) {
     console.error('❌ خطأ في جلب الدروس، يتم الاعتماد على الكاش المحلي:', error);
     const cached = getCachedLessons(subjectId);
-    if (cached.length > 0) {
-      return cached;
-    }
+    if (cached.length > 0) return cached;
     throw error;
   }
 }
 
 export async function getLessonById(lessonId: string): Promise<LessonDetails> {
   try {
-    // 1. محاولة جلب البيانات الحقيقية الكاملة من السيرفر
     const serverLesson = await request<LessonDetails>(`/lessons/${encodeURIComponent(lessonId)}`);
     return serverLesson;
   } catch (error) {
-    console.warn(`⚠️ تعذر جلب الدرس (${lessonId}) من السيرفر، جاري استخراج البيانات والأسئلة الحقيقية من الكاش...`, error);
-
-    // 2. البحث عن الدرس في الكاش المحلي لاستخراج الأسئلة الحقيقية المخزنة معه
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith('zakker_cached_lessons_')) {
@@ -296,7 +276,6 @@ export async function getLessonById(lessonId: string): Promise<LessonDetails> {
           const found = cachedLessons.find((l) => l.id === lessonId || l.lesson_title === lessonId);
           
           if (found) {
-            // استخدام الأسئلة الحقيقية المخزنة داخل content_json أو quiz أو homework أو exam
             const content = found.content_json || {};
             const realQuiz = content.quiz || content.exam || content.homework || found.quiz || [];
 
@@ -313,28 +292,33 @@ export async function getLessonById(lessonId: string): Promise<LessonDetails> {
         }
       }
     }
-
-    // إذا لم تتوفر أسئلة في الكاش أيضاً، يتم رفع الخطأ الأصلي لمعالجة الـ 404 في السيرفر
     throw error;
   }
 }
+
 export async function askLessonAI(lessonId: string, message: string, history: Array<{ role: 'user' | 'model'; text: string }>) {
   return request<{ answer: string }>(`/lessons/${encodeURIComponent(lessonId)}/chat`, {
     method: 'POST',
     body: JSON.stringify({ message, history }),
   });
 }
-// جلب بيانات الطالب (البروفايل، النقاط، المستويات، والـ Streak)
-export async function getStudentProfile(userId: string) {
+
+// ==========================================
+// التعديلات الخاصة بالربط مع studentController
+// ==========================================
+
+// 1. جلب بيانات الطالب (تطابق مع الـ Backend route: /student/profile)
+export async function getStudentProfile(userId?: string) {
+  const path = userId ? `/student/profile/${encodeURIComponent(userId)}` : '/student/profile';
   return request<StudentProfile & { level: number; points_progress: { current: number; target: number; percentage: number } }>(
-    `/students/profile/${encodeURIComponent(userId)}`
+    path
   );
 }
 
-// تحديث نتيجة الامتحان (النقاط، الـ Coins، والـ Streak)
+// 2. تحديث نتيجة الامتحان (تطابق مع الـ Backend route: /student/exam-result)
 export async function submitExamResult(userId: string, isPerfectScore: boolean) {
   return request<{ message: string; earned: { points: number; coins: number }; profile: StudentProfile }>(
-    '/students/exam-result',
+    '/student/exam-result',
     {
       method: 'POST',
       body: JSON.stringify({ userId, isPerfectScore }),
@@ -342,16 +326,21 @@ export async function submitExamResult(userId: string, isPerfectScore: boolean) 
   );
 }
 
-// جلب الأخطاء الخاصة بالطالب (قسم الأخطاء)
-export async function getStudentErrors(userId: string) {
+// 3. جلب الأخطاء الخاصة بالطالب (تطابق مع الـ Backend route: /student/errors)
+export async function getStudentErrors(userId?: string) {
+  const path = userId ? `/student/errors/${encodeURIComponent(userId)}` : '/student/errors';
   return request<Array<{ id: string; question_text?: string; user_answer?: string; correct_answer?: string; created_at?: string }>>(
-    `/students/errors/${encodeURIComponent(userId)}`
+    path
   );
 }
 
-// ==========================================
-// 1. تحديث بيانات البروفايل محلياً بدون تصفير النقاط والـ Coins
-// ==========================================
+// 4. جلب المتصدرين للطلاب (تطابق مع الـ Backend route: /student/leaderboard)
+export async function getStudentLeaderboard() {
+  return request<Array<{ rank: number; id: string; name: string; points: number; isMe: boolean }>>(
+    '/student/leaderboard'
+  );
+}
+
 export function updateStoredProfile(updatedFields: Partial<StudentProfile>): StudentProfile | null {
   const current = getStoredProfile();
   if (!current) return null;
@@ -359,11 +348,12 @@ export function updateStoredProfile(updatedFields: Partial<StudentProfile>): Stu
   localStorage.setItem('zakker_profile', JSON.stringify(newProfile));
   return newProfile;
 }
+
 export async function fetchAndUpdateProfile(): Promise<StudentProfile | null> {
   const current = getStoredProfile();
   if (!current?.id) return current;
   try {
-    const updatedProfile = await request<StudentProfile>(`/students/profile/${encodeURIComponent(current.id)}`);
+    const updatedProfile = await getStudentProfile(current.id);
     if (updatedProfile) {
       localStorage.setItem('zakker_profile', JSON.stringify(updatedProfile));
       return updatedProfile;
@@ -374,9 +364,6 @@ export async function fetchAndUpdateProfile(): Promise<StudentProfile | null> {
   return current;
 }
 
-// ==========================================
-// 2. التحكم في الحد اليومي للـ AI (5 رسائل في اليوم)
-// ==========================================
 export function checkAndIncrementAiLimit(): { allowed: boolean; remaining: number } {
   const MAX_DAILY = 5;
   const today = new Date().toISOString().split('T')[0];
@@ -392,6 +379,7 @@ export function checkAndIncrementAiLimit(): { allowed: boolean; remaining: numbe
   localStorage.setItem('zakker_ai_usage', JSON.stringify(usage)); 
   return { allowed: true, remaining: MAX_DAILY - usage.count };
 }
+
 export async function getTeam() { return request<{ team: any; invitations: any[] }>('/teams'); }
 export async function getInvitations() { return request<{ invitations: any[] }>('/teams/invitations'); }
 export async function getLeaderboard() { return request<{ teams: any[] }>('/teams/leaderboard'); }
