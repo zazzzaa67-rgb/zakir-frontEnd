@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface Session {
+  id?: string;
   day: number;
   time: string;
   subject: string;
@@ -21,17 +22,52 @@ const initialSessions: Session[] = [
   { day: 4, time: '04:00 PM', subject: '📐 رياضيات', lesson: 'الهندسة', status: 'pending', color: '#1E6FF0' },
 ];
 
+function getPlannerStorageKey() {
+  try {
+    const profile = JSON.parse(localStorage.getItem('zakker_profile') || 'null');
+    return `zakker_study_planner_${profile?.id || 'guest'}`;
+  } catch {
+    return 'zakker_study_planner_guest';
+  }
+}
+
+function getSavedPlanner() {
+  try {
+    const saved = localStorage.getItem(getPlannerStorageKey());
+    if (!saved) return { sessions: initialSessions, selectedDay: today, showProBanner: true };
+    const parsed = JSON.parse(saved);
+    if (Array.isArray(parsed)) return { sessions: parsed, selectedDay: today, showProBanner: true };
+    return {
+      sessions: Array.isArray(parsed.sessions) ? parsed.sessions : initialSessions,
+      selectedDay: Number.isInteger(parsed.selectedDay) && parsed.selectedDay >= 0 && parsed.selectedDay < weekDays.length
+        ? parsed.selectedDay
+        : today,
+      showProBanner: parsed.showProBanner !== false,
+    };
+  } catch {
+    return { sessions: initialSessions, selectedDay: today, showProBanner: true };
+  }
+}
+
 export default function StudyPlannerScreen() {
   const navigate = useNavigate();
-  const [selectedDay, setSelectedDay] = useState(today);
-  const [showProBanner, setShowProBanner] = useState(true);
-  const [sessionsList, setSessionsList] = useState<Session[]>(initialSessions);
+  const [selectedDay, setSelectedDay] = useState(() => getSavedPlanner().selectedDay);
+  const [showProBanner, setShowProBanner] = useState(() => getSavedPlanner().showProBanner);
+  const [sessionsList, setSessionsList] = useState<Session[]>(() => getSavedPlanner().sessions);
   const [showAddModal, setShowAddModal] = useState(false);
 
   // New session state
   const [newSubject, setNewSubject] = useState('');
   const [newLesson, setNewLesson] = useState('');
   const [newTime, setNewTime] = useState('04:00 PM');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(getPlannerStorageKey(), JSON.stringify({ sessions: sessionsList, selectedDay, showProBanner }));
+    } catch (error) {
+      console.warn('Could not save study planner locally:', error);
+    }
+  }, [sessionsList, selectedDay, showProBanner]);
 
   const daySessionsToShow = sessionsList.filter((s) => s.day === selectedDay);
 
@@ -40,6 +76,7 @@ export default function StudyPlannerScreen() {
     if (!newSubject.trim() || !newLesson.trim()) return;
 
     const newSession: Session = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       day: selectedDay,
       subject: newSubject,
       lesson: newLesson,
@@ -48,7 +85,7 @@ export default function StudyPlannerScreen() {
       color: '#1E6FF0',
     };
 
-    setSessionsList([...sessionsList, newSession]);
+    setSessionsList((previous) => [...previous, newSession]);
     setNewSubject('');
     setNewLesson('');
     setShowAddModal(false);
@@ -67,6 +104,10 @@ export default function StudyPlannerScreen() {
           : s
       )
     );
+  };
+
+  const deleteSession = (sessionToDelete: Session) => {
+    setSessionsList((previous) => previous.filter((session) => session !== sessionToDelete));
   };
 
   return (
@@ -196,7 +237,7 @@ export default function StudyPlannerScreen() {
           <div className="flex flex-col gap-3">
             {daySessionsToShow.map((session, i) => (
               <div
-                key={i}
+                key={session.id || `${session.day}-${session.time}-${session.lesson}-${i}`}
                 onClick={() => toggleStatus(i)}
                 className="bg-white rounded-2xl p-4 flex items-center gap-3 cursor-pointer active:scale-98 transition-all"
                 style={{
@@ -210,6 +251,18 @@ export default function StudyPlannerScreen() {
                   <div className="text-slate-400 text-xs font-medium mt-1">⏰ {session.time}</div>
                 </div>
                 <div className="flex flex-col items-center gap-2 flex-shrink-0">
+                  <button
+                    type="button"
+                    aria-label="حذف المهمة"
+                    title="حذف المهمة"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      deleteSession(session);
+                    }}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-red-500 bg-red-50 hover:bg-red-100"
+                  >
+                    ×
+                  </button>
                   <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
                     style={{ background: session.color + '18' }}
