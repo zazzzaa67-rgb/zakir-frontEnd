@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { getCachedProfile } from '../lib/profileManager';
 
 interface ProfileData {
   points: number;
@@ -26,17 +27,52 @@ export default function GamificationScreen() {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    // 1. دالة لتجهيز وقراءة بيانات البروفايل المحلية
+    const loadLocalProfile = () => {
+      const cached:any = getCachedProfile();
+      if (cached) {
+        const currentPoints = cached.points ?? cached.xp ?? cached.total_points ?? 0;
+        const targetPoints = 250;
+        const currentProgress = currentPoints % targetPoints;
+        const percentage = Math.min(Math.round((currentProgress / targetPoints) * 100), 100);
+        const calculatedLevel = cached.level ?? Math.floor(currentPoints / targetPoints) + 1;
+
+        setProfile({
+          points: currentPoints,
+          level: calculatedLevel,
+          streak: cached.streak ?? cached.streak_days ?? 0,
+          points_progress: {
+            current: currentProgress,
+            target: targetPoints,
+            percentage: percentage,
+          },
+        });
+      }
+    };
+
+    // 2. تحميل البيانات المحلية فور فتح الشاشة
+    loadLocalProfile();
+
+    // 3. الاستماع للتحديثات اللحظية للبروفايل
+    window.addEventListener('profileUpdated', loadLocalProfile);
+
+    // 4. دالة جلب البيانات من ה-API مع معالجة الأخطاء
     async function fetchData() {
       try {
-        // استبدل الـ URL برابط الـ API الخاص بك
-        const profileRes = await fetch('/api/student/profile');
-        const profileData = await profileRes.json();
-        
-        const leaderboardRes = await fetch('/api/student/leaderboard');
-        const leaderboardData = await leaderboardRes.json();
+        const [profileRes, leaderboardRes] = await Promise.all([
+          fetch('/api/student/profile').catch(() => null),
+          fetch('/api/student/leaderboard').catch(() => null),
+        ]);
 
-        setProfile(profileData);
-        setLeaderboard(leaderboardData);
+        if (profileRes && profileRes.ok) {
+          const profileData = await profileRes.json();
+          setProfile(profileData);
+        }
+
+        if (leaderboardRes && leaderboardRes.ok) {
+          const leaderboardData = await leaderboardRes.json();
+          setLeaderboard(leaderboardData);
+        }
       } catch (err) {
         console.error('Error loading gamification data:', err);
       } finally {
@@ -45,11 +81,20 @@ export default function GamificationScreen() {
     }
 
     fetchData();
+
+    return () => {
+      window.removeEventListener('profileUpdated', loadLocalProfile);
+    };
   }, []);
 
-  if (loading) {
-    return <div className="p-5 text-center">جاري التحميل...</div>;
+  if (loading && !profile) {
+    return <div className="p-5 text-center text-slate-600 font-bold">جاري التحميل...</div>;
   }
+
+  const currentLevel = profile?.level || 1;
+  const currentProgress = profile?.points_progress?.current || 0;
+  const targetProgress = profile?.points_progress?.target || 250;
+  const percentageProgress = profile?.points_progress?.percentage || 0;
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
@@ -75,12 +120,12 @@ export default function GamificationScreen() {
                 className="px-3 py-1 rounded-full text-xs font-black"
                 style={{ background: '#F59E0B', color: 'white' }}
               >
-                Level {profile?.level || 1}
+                Level {currentLevel}
               </div>
               <div className="text-right">
                 <div className="text-white/60 text-xs font-medium mb-0.5">XP Progress</div>
                 <div className="text-white font-black text-lg">
-                  {profile?.points_progress.current || 0} / {profile?.points_progress.target || 250}
+                  {currentProgress} / {targetProgress}
                 </div>
               </div>
             </div>
@@ -89,15 +134,15 @@ export default function GamificationScreen() {
               <div
                 className="h-full rounded-full"
                 style={{
-                  width: `${profile?.points_progress.percentage || 0}%`,
+                  width: `${percentageProgress}%`,
                   background: 'linear-gradient(90deg, #F59E0B, #F97316)',
                   boxShadow: '0 0 12px rgba(245,158,11,0.6)',
                 }}
               />
             </div>
             <div className="flex justify-between text-white/50 text-xs font-medium">
-              <span>Level {(profile?.level || 1) + 1} بعد {250 - (profile?.points_progress.current || 0)} نقطة</span>
-              <span>{profile?.points_progress.percentage || 0}% مكتمل</span>
+              <span>Level {currentLevel + 1} بعد {targetProgress - currentProgress} نقطة</span>
+              <span>{percentageProgress}% مكتمل</span>
             </div>
           </div>
         </div>
@@ -114,23 +159,29 @@ export default function GamificationScreen() {
         <div className="px-5 mt-5">
           <h2 className="text-slate-900 text-lg font-black mb-3 text-right">ترتيبك 🏅</h2>
           <div className="flex flex-col gap-2.5">
-            {leaderboard.map((player, index) => (
-              <div
-                key={player.id}
-                className="rounded-2xl px-4 py-3 flex items-center gap-3 bg-white"
-                style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
-              >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm">
-                  #{index + 1}
+            {leaderboard.length > 0 ? (
+              leaderboard.map((player, index) => (
+                <div
+                  key={player.id || index}
+                  className="rounded-2xl px-4 py-3 flex items-center gap-3 bg-white"
+                  style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+                >
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm">
+                    #{index + 1}
+                  </div>
+                  <div className="flex-1 text-right">
+                    <div className="font-black text-sm text-slate-900">{player.name}</div>
+                  </div>
+                  <div className="font-black text-sm text-blue-600">
+                    {player.points?.toLocaleString() || 0}
+                  </div>
                 </div>
-                <div className="flex-1 text-right">
-                  <div className="font-black text-sm text-slate-900">{player.name}</div>
-                </div>
-                <div className="font-black text-sm text-blue-600">
-                  {player.points.toLocaleString()}
-                </div>
+              ))
+            ) : (
+              <div className="bg-white rounded-2xl p-4 text-center text-slate-500 text-sm font-medium">
+                لا تتوفر قائمة متصدرين حالياً
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

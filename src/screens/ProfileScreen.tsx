@@ -18,7 +18,7 @@ export default function ProfileScreen() {
   const navigate = useNavigate();
   
   // 1. قراءة البيانات من LocalStorage بشكل لحظي وآنوي
-  const [profile, setProfile] = useState<StudentProfile | null>(() => getCachedProfile());
+  const [profile, setProfile] = useState<any>(() => getCachedProfile());
 
   useEffect(() => {
     // 2. الاستماع لأي تغيير يحدث في النقاط/البيانات من أي صفحة أخرى
@@ -30,11 +30,12 @@ export default function ProfileScreen() {
     return () => window.removeEventListener('profileUpdated', handleProfileChange);
   }, []);
 
-  // حساب القيم المباشرة
-  const points = profile?.points || 0;
-  const coins = profile?.coins || 0;
-  const streak = profile?.streak || 0;
-  const calculatedLevel = Math.floor(points / 250) + 1;
+  // حساب واستخلاص القيم المرنة لضمان عدم حدوث Undefined
+  const points = profile?.points ?? profile?.xp ?? profile?.total_points ?? 0;
+  const coins = profile?.coins ?? profile?.total_coins ?? 0;
+  const streak = profile?.streak ?? profile?.streak_days ?? 0;
+  const level = profile?.level ?? Math.floor(points / 250) + 1;
+  const displayName = profile?.display_name || profile?.name || profile?.full_name || 'طالب ذاكر معي';
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
@@ -52,7 +53,7 @@ export default function ProfileScreen() {
           <div className="flex items-center gap-4 justify-end mb-5">
             <div className="text-right">
               <h1 className="text-2xl font-black text-white">
-                {profile?.display_name || 'طالب ذاكر معي'}
+                {displayName}
               </h1>
               <div className="text-blue-200 text-sm font-medium">
                 {profile?.grade_level ? `الصف ${profile.grade_level}` : 'المرحلة الدراسية'}
@@ -67,13 +68,13 @@ export default function ProfileScreen() {
                   border: '3px solid rgba(255,255,255,0.4)',
                 }}
               >
-                {profile?.gender === 'girl' ? '👧' : '👦'}
+                {profile?.gender === 'girl' || profile?.avatar === 'girl' ? '👧' : '👦'}
               </div>
               <div
                 className="absolute -bottom-1.5 -left-1.5 px-2 py-0.5 rounded-full text-xs font-black"
                 style={{ background: '#F59E0B', color: 'white' }}
               >
-                Lvl {calculatedLevel}
+                Lvl {level}
               </div>
             </div>
           </div>
@@ -81,10 +82,10 @@ export default function ProfileScreen() {
           {/* Quick stats row */}
           <div className="grid grid-cols-4 gap-2">
             {[
-              { label: 'Points', value: points.toLocaleString(), icon: '🏆', color: 'rgba(255,255,255,0.15)' },
-              { label: 'Coins', value: coins.toLocaleString(), icon: '🪙', color: 'rgba(245,158,11,0.4)' },
-              { label: 'Streak', value: `${streak}🔥`, icon: '', color: 'rgba(249,115,22,0.3)' },
-              { label: 'الصف', value: `${profile?.grade_level || 1}`, icon: '📚', color: 'rgba(255,255,255,0.15)' },
+              { label: 'Points', value: points.toLocaleString(), color: 'rgba(255,255,255,0.15)' },
+              { label: 'Coins', value: coins.toLocaleString(), color: 'rgba(245,158,11,0.4)' },
+              { label: 'Streak', value: `${streak}🔥`, color: 'rgba(249,115,22,0.3)' },
+              { label: 'الصف', value: `${profile?.grade_level || 1}`, color: 'rgba(255,255,255,0.15)' },
             ].map((stat) => (
               <div
                 key={stat.label}
@@ -107,7 +108,7 @@ export default function ProfileScreen() {
             <div className="flex items-center justify-between mb-3">
               <button
                 onClick={() => navigate('/gamification')}
-                className="text-blue-600 text-sm font-bold"
+                className="text-blue-600 text-sm font-bold cursor-pointer"
               >
                 عرض الكل
               </button>
@@ -137,7 +138,7 @@ export default function ProfileScreen() {
               <button
                 key={item.label}
                 onClick={() => navigate(`/${item.screen}`)}
-                className="w-full flex items-center gap-3 px-4 py-4 text-right active:bg-slate-50 transition-colors border-b border-slate-50 last:border-0"
+                className="w-full flex items-center gap-3 px-4 py-4 text-right active:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 cursor-pointer"
               >
                 <span className="text-slate-300 text-base">‹</span>
                 {item.badge && (

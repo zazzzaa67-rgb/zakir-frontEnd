@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
-import { getLeaderboard, getStoredProfile, getTeam } from '../lib/api';
+import { getLeaderboard, getTeam } from '../lib/api';
+// 1. استيراد getCachedProfile بدلاً من getStoredProfile (تأكد من المسار الصحيح للملف)
+import { getCachedProfile } from '../lib/profileManager'; 
 
 const quickActions = [
   { icon: '📚', label: 'المواد', path: '/subjects', color: '#EFF6FF', iconBg: '#1E6FF0' },
@@ -15,27 +17,42 @@ const quickActions = [
 export default function HomeScreen() {
   const navigate = useNavigate();
   
-  // 1. إضافة State للملف الشخصي ليتم تحديث الشاشة تلقائياً
   const [profile, setProfile] = useState<any>(null);
   const [team, setTeam] = useState<any>(null);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
 
   useEffect(() => {
-    // 2. تحديث بيانات البروفايل عند فتح الشاشة
-    const currentProfile = getStoredProfile();
-    setProfile(currentProfile);
+    // 2. دالة جلب البروفايل المحلي والتأكد من قراءته
+    const loadProfile = () => {
+      const currentProfile = getCachedProfile();
+      setProfile(currentProfile);
+    };
 
+    // تحميل البروفايل فور فتح الشاشة
+    loadProfile();
+
+    // الاستماع لحدث profileUpdated للتحديث الفوري للنقاط والـ coins عند أي تغيير
+    window.addEventListener('profileUpdated', loadProfile);
+
+    // جلب بيانات الفرق والـ Leaderboard
     Promise.all([getTeam(), getLeaderboard()])
       .then(([teamResult, leaderboardResult]) => {
-        setTeam(teamResult.team);
-        setLeaderboard(leaderboardResult.teams.slice(0, 3));
+        setTeam(teamResult?.team);
+        setLeaderboard(leaderboardResult?.teams?.slice(0, 3) || []);
       })
       .catch(() => {
         setLeaderboard([]);
       });
+
+    // تنظيف الـ EventListener عند إغلاق الشاشة
+    return () => {
+      window.removeEventListener('profileUpdated', loadProfile);
+    };
   }, []);
 
-  const firstName = profile?.display_name?.split(' ')[0] || 'يا بطل';
+  // 3. دعم مسميات الاسم المختلفة (display_name أو name أو full_name)
+  const rawName = profile?.display_name || profile?.name || profile?.full_name || '';
+  const firstName = rawName ? rawName.split(' ')[0] : 'يا بطل';
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF] text-right">
@@ -68,7 +85,7 @@ export default function HomeScreen() {
             <div className="flex items-center gap-3">
               <div>
                 <p className="text-white/70 text-sm font-medium">جاهز نذاكر النهارده؟</p>
-                <h1 className="text-white text-xl font-black">أهلاً يا {firstName} 👋</h1>
+                <h1 className="text-white text-xl font-black">أهلاً {firstName} 👋</h1>
               </div>
               <div
                 className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
