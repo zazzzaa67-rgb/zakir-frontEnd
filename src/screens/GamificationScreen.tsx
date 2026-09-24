@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { getCachedProfile } from '../lib/profileManager';
+import { fetchAndUpdateProfile, getStudentLeaderboard } from '../lib/api';
 
 interface ProfileData {
   points: number;
@@ -59,19 +60,27 @@ export default function GamificationScreen() {
     // 4. دالة جلب البيانات من ה-API مع معالجة الأخطاء
     async function fetchData() {
       try {
-        const [profileRes, leaderboardRes] = await Promise.all([
-          fetch('/api/student/profile').catch(() => null),
-          fetch('/api/student/leaderboard').catch(() => null),
+        const [profileResult, leaderboardResult] = await Promise.allSettled([
+          fetchAndUpdateProfile(),
+          getStudentLeaderboard(),
         ]);
-
-        if (profileRes && profileRes.ok) {
-          const profileData = await profileRes.json();
-          setProfile(profileData);
+        if (profileResult.status === 'fulfilled' && profileResult.value) {
+          const profileData = profileResult.value;
+          const points = profileData.points ?? 0;
+          const current = points % 250;
+          setProfile({
+            points,
+            level: Math.floor(points / 250) + 1,
+            streak: profileData.streak ?? 0,
+            points_progress: {
+              current,
+              target: 250,
+              percentage: Math.round((current / 250) * 100),
+            },
+          });
         }
-
-        if (leaderboardRes && leaderboardRes.ok) {
-          const leaderboardData = await leaderboardRes.json();
-          setLeaderboard(leaderboardData);
+        if (leaderboardResult.status === 'fulfilled') {
+          setLeaderboard(leaderboardResult.value);
         }
       } catch (err) {
         console.error('Error loading gamification data:', err);

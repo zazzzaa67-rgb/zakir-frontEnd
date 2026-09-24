@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 
-const configuredApiUrl = import.meta.env.VITE_API_URL ?? 'https://zakir-backend.vercel.app/api';
-const API_URL = configuredApiUrl.replace(/\/$/, '').endsWith('/api')
-  ? configuredApiUrl.replace(/\/$/, '')
-  : `${configuredApiUrl.replace(/\/$/, '')}/api`;
+const configuredApiUrl = import.meta.env.VITE_API_URL || 'https://zakir-backend.vercel.app/api';
+const normalizedApiUrl = configuredApiUrl.replace(/\/$/, '').replace(/\/(?:api\/)+api$/i, '/api');
+const API_URL = normalizedApiUrl.endsWith('/api')
+  ? normalizedApiUrl
+  : `${normalizedApiUrl}/api`;
 
 export type StudentProfile = {
   id: string;
