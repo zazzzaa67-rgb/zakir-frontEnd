@@ -107,6 +107,12 @@ export default function GamificationScreen() {
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
+      {loading && (
+        <div role="status" aria-live="polite" className="flex items-center justify-center gap-2 bg-blue-50 py-2 text-sm font-bold text-blue-700">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          <span>جاري تحميل البيانات...</span>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto pb-24">
         {/* Header */}
         <div

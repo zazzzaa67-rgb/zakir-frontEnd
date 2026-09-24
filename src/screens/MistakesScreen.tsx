@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { addStudyNote, deleteStudyNote, getStoredMistakes, getStoredNotes } from '../lib/mistakeStore';
 
 const mistakes = [
   {
@@ -43,6 +44,21 @@ const tabs = ['❌ أخطائي', '📝 ملاحظاتي', '📌 أسئلة مت
 export default function MistakesScreen() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
+  const [mistakes, setMistakes] = useState(getStoredMistakes);
+  const [notes, setNotes] = useState(getStoredNotes);
+  const [showNoteForm, setShowNoteForm] = useState(false);
+  const [noteSubject, setNoteSubject] = useState('');
+  const [noteContent, setNoteContent] = useState('');
+
+  const handleAddNote = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!noteSubject.trim() || !noteContent.trim()) return;
+    addStudyNote(noteSubject.trim(), noteContent.trim());
+    setNotes(getStoredNotes());
+    setNoteSubject('');
+    setNoteContent('');
+    setShowNoteForm(false);
+  };
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
@@ -91,7 +107,7 @@ export default function MistakesScreen() {
           <div className="flex flex-col gap-4">
             {mistakes.map((m, i) => (
               <div
-                key={i}
+                key={m.id || i}
                 className="bg-white rounded-2xl overflow-hidden"
                 style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
               >
@@ -142,6 +158,7 @@ export default function MistakesScreen() {
         {activeTab === 1 && (
           <div className="flex flex-col gap-3">
             <button
+              onClick={() => setShowNoteForm(true)}
               className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold cursor-pointer active:scale-98 transition-transform"
               style={{ background: '#EFF6FF', color: '#1E6FF0', border: '2px dashed #93C5FD' }}
             >
@@ -151,11 +168,22 @@ export default function MistakesScreen() {
 
             {notes.map((n, i) => (
               <div
-                key={i}
+                key={n.id || i}
                 className="bg-white rounded-2xl p-4"
                 style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}
               >
                 <div className="flex items-center justify-between mb-2">
+                  <button
+                    type="button"
+                    aria-label="حذف الملحوظة"
+                    onClick={() => {
+                      if (n.id) deleteStudyNote(n.id);
+                      setNotes(getStoredNotes());
+                    }}
+                    className="text-xs text-red-500 font-bold"
+                  >
+                    حذف
+                  </button>
                   <span className="text-xs text-slate-400 font-medium">{n.date}</span>
                   <span
                     className="text-xs font-bold px-2.5 py-1 rounded-lg"
@@ -202,6 +230,32 @@ export default function MistakesScreen() {
           </div>
         )}
       </div>
+      {showNoteForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <form onSubmit={handleAddNote} className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+            <h2 className="mb-4 text-right text-lg font-black text-slate-900">إضافة ملحوظة</h2>
+            <input
+              autoFocus
+              value={noteSubject}
+              onChange={(event) => setNoteSubject(event.target.value)}
+              placeholder="المادة أو عنوان الملحوظة"
+              className="mb-3 w-full rounded-xl border border-slate-200 p-3 text-right text-sm"
+              required
+            />
+            <textarea
+              value={noteContent}
+              onChange={(event) => setNoteContent(event.target.value)}
+              placeholder="اكتب ملحوظتك هنا"
+              className="min-h-28 w-full rounded-xl border border-slate-200 p-3 text-right text-sm"
+              required
+            />
+            <div className="mt-3 flex gap-2">
+              <button type="button" onClick={() => setShowNoteForm(false)} className="flex-1 rounded-xl bg-slate-100 py-3 font-bold text-slate-600">إلغاء</button>
+              <button type="submit" className="flex-1 rounded-xl bg-blue-600 py-3 font-bold text-white">حفظ الملحوظة</button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

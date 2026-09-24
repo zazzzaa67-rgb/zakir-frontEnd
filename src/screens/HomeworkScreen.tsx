@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LessonQuestion, submitExamResult, getStoredProfile } from '../lib/api';
 import { updateLocalPointsAndCoins, setCachedProfile } from '../lib/profileManager';
+import { recordMistake } from '../lib/mistakeStore';
 
 const fallbackHomeworkQuestions = [
   {
@@ -22,6 +23,7 @@ interface LocationState {
   questions?: LessonQuestion[];
   lesson?: string;
   lessonId?: string;
+  subject?: string;
 }
 
 export default function HomeworkScreen() {
@@ -41,6 +43,7 @@ export default function HomeworkScreen() {
 
   const lesson = state.lesson || 'الدرس';
   const lessonId = state.lessonId;
+  const subject = state.subject || lesson;
 
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -57,6 +60,14 @@ export default function HomeworkScreen() {
     setAnswered(true);
     if (idx === q.correct) {
       setScore((prevScore) => prevScore + 1);
+    } else {
+      recordMistake({
+        subject,
+        lesson,
+        question: q.question,
+        yourAnswer: q.options[idx] ?? '',
+        correct: q.options[q.correct] ?? '',
+      });
     }
   };
 
@@ -138,6 +149,12 @@ export default function HomeworkScreen() {
           </div>
 
           <div className="flex flex-col gap-3">
+            <button
+              onClick={() => navigate('/mistakes')}
+              className="w-full rounded-2xl bg-red-50 py-3 font-bold text-red-700"
+            >
+              مراجعة أخطائي
+            </button>
             <button
               onClick={() => navigate('/ai-lesson', { state: { lesson, lessonId } })}
               className="w-full py-4 rounded-2xl text-white font-bold text-base cursor-pointer active:scale-95 transition-transform"
