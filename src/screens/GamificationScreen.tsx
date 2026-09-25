@@ -166,7 +166,6 @@ export default function GamificationScreen() {
             </div>
           </div>
         </div>
-
         {/* Stats row */}
         <div className="flex gap-3 px-5 mt-4">
           <div className="flex-1 bg-white rounded-2xl p-3 text-center" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
