@@ -321,8 +321,8 @@ export default function HomeScreen() {
             ))}
           </div>
         </div>
+        <Footer />
       </div>
-      <Footer />
       <BottomNav active="home" />
     </div>
   );
