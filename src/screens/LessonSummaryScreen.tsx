@@ -79,7 +79,7 @@ export default function AILessonScreen() {
           →
         </button>
         <div className="text-center">
-          <h1 className="font-black text-lg">ذاكر معي 🤖</h1>
+          <h1 className="font-black text-lg">فهمتها 🤖</h1>
           <p className="text-xs text-indigo-300">المعادلات الخطية</p>
         </div>
         <div className="w-6" />
@@ -93,7 +93,7 @@ export default function AILessonScreen() {
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs font-semibold text-emerald-200">نشط الآن</span>
             </div>
-            <h2 className="font-black text-lg mt-1">مساعد ذاكر معي</h2>
+            <h2 className="font-black text-lg mt-1">مساعد فهمتها</h2>
             <p className="text-xs text-blue-100">جاهز أشرحلك الدرس بطريقتك</p>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-2xl shadow-inner">

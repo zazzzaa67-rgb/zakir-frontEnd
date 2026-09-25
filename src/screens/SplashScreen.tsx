@@ -103,7 +103,7 @@ export default function SplashScreen() {
         className="text-5xl font-black text-white mb-3 tracking-tight"
         style={{ textShadow: '0 0 40px rgba(30,111,240,0.8), 0 4px 20px rgba(0,0,0,0.3)' }}
       >
-        ذاكر معي
+        فهمتها
       </h1>
 
       {/* Tagline */}

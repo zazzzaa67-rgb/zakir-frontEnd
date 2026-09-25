@@ -40,7 +40,7 @@ export default function AuthScreen() {
       <div className="relative pt-16">
         <div className="mb-10 flex items-center justify-between">
           <div>
-            <p className="mb-2 text-sm font-bold text-cyan-300">ذاكر معي</p>
+            <p className="mb-2 text-sm font-bold text-cyan-300">فهمتها</p>
             <h1 className="text-3xl font-black leading-tight">مستقبلك الدراسي<br />بيبدأ من هنا</h1>
           </div>
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-3xl shadow-xl">🎓</div>

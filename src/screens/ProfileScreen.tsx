@@ -9,7 +9,7 @@ const menuItems = [
   { icon: '🔔', label: 'الإشعارات', screen: 'notifications' as const, badge: '3' },
   { icon: '🪙', label: 'Coins محفظتي', screen: 'coins' as const },
   { icon: '🏆', label: 'مستواي وإنجازاتي', screen: 'gamification' as const },
-  { icon: '🚀', label: 'ذاكر معي PRO', screen: 'pro' as const, highlight: true },
+  { icon: '🚀', label: 'فهمتها PRO', screen: 'pro' as const, highlight: true },
   { icon: '📅', label: 'جدول المذاكرة', screen: 'planner' as const },
   { icon: '📊', label: 'الإحصائيات المتقدمة', screen: 'pro_dashboard' as const },
 ];
@@ -35,7 +35,7 @@ export default function ProfileScreen() {
   const coins = profile?.coins ?? profile?.total_coins ?? 0;
   const streak = profile?.streak ?? profile?.streak_days ?? 0;
   const level = profile?.level ?? Math.floor(points / 250) + 1;
-  const displayName = profile?.display_name || profile?.name || profile?.full_name || 'طالب ذاكر معي';
+  const displayName = profile?.display_name || profile?.name || profile?.full_name || 'طالب فهمتها';
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]">

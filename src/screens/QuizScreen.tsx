@@ -37,7 +37,7 @@ export default function QuizScreen() {
         question: item.question ?? 'سؤال الدرس',
         options: item.options ?? [],
         correct: item.correct_index ?? 0,
-        explanation: item.explanation ?? 'راجع شرح الدرس مع مساعد ذاكر معي.',
+        explanation: item.explanation ?? 'راجع شرح الدرس مع مساعد فهمتها.',
       }))
     : fallbackQuestions;
 

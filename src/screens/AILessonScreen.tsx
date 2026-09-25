@@ -196,7 +196,7 @@ export default function AILessonScreen() {
           </div>
         </div>
 
-        <h1 className="text-xl font-black text-white">ذاكر معي 🤖</h1>
+        <h1 className="text-xl font-black text-white">فهمتها 🤖</h1>
         <p className="text-blue-300 text-sm font-medium mt-0.5 truncate">{lessonTitle}</p>
       </div>
 
@@ -219,7 +219,7 @@ export default function AILessonScreen() {
             🤖
           </div>
           <div className="text-right flex-1">
-            <div className="text-white font-black text-base">مساعد ذاكر الذكي</div>
+            <div className="text-white font-black text-base">مساعد فهمتها الذكي</div>
             <div className="text-indigo-300 text-xs font-medium mt-0.5">جاهز لشرح وتبسيط نقاط الدرس</div>
             <div className="flex items-center gap-1.5 justify-start mt-2">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />

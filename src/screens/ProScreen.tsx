@@ -54,7 +54,7 @@ export default function ProScreen() {
             className="text-sm font-black px-4 py-1.5 rounded-full inline-block mb-3"
             style={{ background: 'linear-gradient(135deg, #F59E0B, #F97316)', color: 'white' }}
           >
-            🚀 ذاكر معي PRO
+            🚀 فهمتها PRO
           </div>
           <h1 className="text-3xl font-black text-white mb-2">
             ذاكر أكتر،{' '}

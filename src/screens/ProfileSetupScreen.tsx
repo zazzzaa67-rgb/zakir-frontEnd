@@ -66,7 +66,7 @@ export default function ProfileSetupScreen() {
           <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-600">ثانوي عام</span>
           <span className="text-xs font-bold text-slate-400">بياناتك التعليمية</span>
         </div>
-        <h1 className="mb-1 text-2xl font-black text-slate-900">خلّي ذاكر معي يعرفك</h1>
+        <h1 className="mb-1 text-2xl font-black text-slate-900">خلّي فهمتها يعرفك</h1>
         <p className="text-sm font-medium text-slate-500">اختياراتك هتحدد المواد والكتب اللي هتظهر لك.</p>
       </div>
 
