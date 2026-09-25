@@ -22,6 +22,7 @@ import ProfileScreen from './screens/ProfileScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 import AuthScreen from './screens/AuthScreen';
 import TeamScreen from './screens/TeamScreen';
+import ArticlesScreen from './screens/ArticlesScreen';
 import { restoreSession } from './lib/api';
 
 export default function App() {
@@ -54,6 +55,8 @@ export default function App() {
             <Route path="/setup" element={<ProfileSetupScreen />} />
             <Route path="/teams" element={<TeamScreen />} />
             <Route path="/home" element={<HomeScreen />} />
+            <Route path="/articles" element={<ArticlesScreen />} />
+            <Route path="/articles/:articleId" element={<ArticlesScreen />} />
             <Route path="/subjects" element={<SubjectsScreen />} />
             <Route path="/lesson-list/:subjectId" element={<LessonListScreen />} />
             {/* المسارات التي تتطلب parameters تصبح جزءاً من الـ URL بشكل دائم */}

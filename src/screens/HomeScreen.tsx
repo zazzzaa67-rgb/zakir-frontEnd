@@ -8,7 +8,7 @@ import { getCachedProfile } from '../lib/profileManager';
 const quickActions = [
   { icon: '📚', label: 'المواد', path: '/subjects', color: '#EFF6FF', iconBg: '#1E6FF0' },
   { icon: '🤖', label: 'ذاكر معي', path: '/ai-lesson', color: '#F5F3FF', iconBg: '#7C3AED' },
-  { icon: '📝', label: 'اختباراتي', path: '/quiz', color: '#FFF7ED', iconBg: '#F97316' },
+  { icon: '📖', label: 'مقالات', path: '/articles', color: '#FFF7ED', iconBg: '#F97316' },
   { icon: '📊', label: 'تقدمي', path: '/gamification', color: '#F0FDF4', iconBg: '#10B981' },
   { icon: '📅', label: 'جدول المذاكرة', path: '/planner', color: '#FFF5F5', iconBg: '#EF4444' },
   { icon: '❌', label: 'أخطائي', path: '/mistakes', color: '#FEFCE8', iconBg: '#EAB308' },

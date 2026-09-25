@@ -96,8 +96,13 @@ export default function GamificationScreen() {
     };
   }, []);
 
-  if (loading && !profile) {
-    return <div className="p-5 text-center text-slate-600 font-bold">جاري التحميل...</div>;
+  if (loading) {
+    return (
+      <div role="status" aria-live="polite" className="w-full h-full flex flex-col items-center justify-center gap-3 bg-[#F0F4FF] text-slate-600 font-bold">
+        <span className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <span>جاري التحميل...</span>
+      </div>
+    );
   }
 
   const currentLevel = profile?.level || 1;
