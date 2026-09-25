@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 
 interface BottomNavProps {
-  active: 'home' | 'subjects' | 'ai_lesson' | 'gamification' | 'profile';
+  active: 'home' | 'subjects' | 'ai_lesson' | 'coins' | 'gamification' | 'profile';
 }
 
 export default function BottomNav({ active }: BottomNavProps) {
@@ -10,7 +10,7 @@ export default function BottomNav({ active }: BottomNavProps) {
   const tabs = [
     { id: 'home' as const, path: '/home', icon: '🏠', label: 'الرئيسية' },
     { id: 'subjects' as const, path: '/subjects', icon: '📚', label: 'المواد' },
-    { id: 'ai_lesson' as const, path: '/ai-lesson', icon: '🤖', label: 'فهمتها', center: true },
+    { id: 'coins' as const, path: '/coins', icon: '🪙', label: 'النقاط', center: true },
     { id: 'gamification' as const, path: '/gamification', icon: '🏆', label: 'تقدمي' },
     { id: 'profile' as const, path: '/profile', icon: '👤', label: 'حسابي' },
   ];
