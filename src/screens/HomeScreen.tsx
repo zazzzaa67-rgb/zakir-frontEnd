@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import Footer from '../components/Footer';
 import { getLeaderboard, getTeam } from '../lib/api';
 // 1. استيراد getCachedProfile بدلاً من getStoredProfile (تأكد من المسار الصحيح للملف)
 import { getCachedProfile } from '../lib/profileManager'; 
@@ -321,6 +322,7 @@ export default function HomeScreen() {
           </div>
         </div>
       </div>
+      <Footer />
       <BottomNav active="home" />
     </div>
   );
