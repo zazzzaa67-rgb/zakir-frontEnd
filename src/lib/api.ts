@@ -181,9 +181,11 @@ export async function signUp(payload: { email: string; password: string; display
 // دالة لجلب الكاش المحلي للمواد
 export function getCachedSubjects(trackId?: string): Subject[] {
   try {
-    if (!trackId) return [];
-    const cached = localStorage.getItem(`zakker_cached_subjects_${encodeURIComponent(trackId)}`);
-    return cached ? JSON.parse(cached) : [];
+    const scoped = trackId
+      ? JSON.parse(localStorage.getItem(`zakker_cached_subjects_${encodeURIComponent(trackId)}`) || '[]') as Subject[]
+      : [];
+    if (scoped.length > 0) return scoped;
+    return JSON.parse(localStorage.getItem('zakker_cached_subjects') || '[]') as Subject[];
   } catch {
     return [];
   }
@@ -211,6 +213,10 @@ export async function getSubjectsByTrack(trackId: string): Promise<Subject[]> {
     const result = await request<Subject[]>(`/subjects?track_id=${encodeURIComponent(trackId)}`);
     if (Array.isArray(result)) {
       setCachedSubjects(trackId, result);
+      if (result.length === 0) {
+        const cached = getCachedSubjects(trackId);
+        if (cached.length > 0) return cached;
+      }
       return result;
     }
     return [];
@@ -229,8 +235,9 @@ function lessonsCacheKey(subjectId: string, trackId?: string) {
 
 export function getCachedLessons(subjectId: string, trackId?: string): ApiLesson[] {
   try {
-    const cached = localStorage.getItem(lessonsCacheKey(subjectId, trackId));
-    return cached ? JSON.parse(cached) : [];
+    const scoped = JSON.parse(localStorage.getItem(lessonsCacheKey(subjectId, trackId)) || '[]') as ApiLesson[];
+    if (scoped.length > 0) return scoped;
+    return JSON.parse(localStorage.getItem(`zakker_cached_lessons_${subjectId}`) || '[]') as ApiLesson[];
   } catch {
     return [];
   }
@@ -260,6 +267,10 @@ export async function getLessonsBySubject(subjectId: string, trackId?: string): 
 
     if (Array.isArray(result)) {
       setCachedLessons(subjectId, result, trackId);
+      if (result.length === 0) {
+        const cached = getCachedLessons(subjectId, trackId);
+        if (cached.length > 0) return cached;
+      }
       return result;
     }
     return [];
