@@ -43,6 +43,7 @@ export default function AILessonScreen() {
       })
       .catch((err) => {
         console.error('Failed to load lesson details:', err);
+        setChatError('الدرس ده مش موجود على السيرفر. ارجع لقائمة المواد وافتح درسًا متاحًا.');
       });
   }, [lessonId]);
 
@@ -89,6 +90,10 @@ export default function AILessonScreen() {
     if (!message || chatLoading) return;
     if (!lessonId) {
       setChatError('يرجى فتح الدرس من قائمة الدروس أولاً');
+      return;
+    }
+    if (!lessonDetails) {
+      setChatError('لسه مش قادر أحمّل الدرس. ارجع لقائمة المواد وافتحه من جديد.');
       return;
     }
     // 🔒 التحقق من الحد اليومي (5 رسائل/يوم)

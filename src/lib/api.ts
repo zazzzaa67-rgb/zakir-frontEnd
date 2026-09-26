@@ -155,7 +155,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     body = {};
   }
   if (!response.ok) {
-    throw new Error(body.error ?? (responseText.trim() || `حصل خطأ من السيرفر (${response.status})`));
+    const error = new Error(body.error ?? (responseText.trim() || `حصل خطأ من السيرفر (${response.status})`)) as Error & { status: number };
+    error.status = response.status;
+    throw error;
   }
   return body as T;
 }
@@ -177,9 +179,10 @@ export async function signUp(payload: { email: string; password: string; display
 }
 
 // دالة لجلب الكاش المحلي للمواد
-export function getCachedSubjects(): Subject[] {
+export function getCachedSubjects(trackId?: string): Subject[] {
   try {
-    const cached = localStorage.getItem('zakker_cached_subjects');
+    if (!trackId) return [];
+    const cached = localStorage.getItem(`zakker_cached_subjects_${encodeURIComponent(trackId)}`);
     return cached ? JSON.parse(cached) : [];
   } catch {
     return [];
@@ -187,10 +190,10 @@ export function getCachedSubjects(): Subject[] {
 }
 
 // دالة لحفظ المواد في الكاش المحلي
-export function setCachedSubjects(subjects: Subject[]) {
+export function setCachedSubjects(trackId: string, subjects: Subject[]) {
   try {
-    if (Array.isArray(subjects) && subjects.length > 0) {
-      localStorage.setItem('zakker_cached_subjects', JSON.stringify(subjects));
+    if (Array.isArray(subjects)) {
+      localStorage.setItem(`zakker_cached_subjects_${encodeURIComponent(trackId)}`, JSON.stringify(subjects));
     }
   } catch (e) {
     console.error('Failed to cache subjects', e);
@@ -201,39 +204,42 @@ export function setCachedSubjects(subjects: Subject[]) {
 export async function getSubjectsByTrack(trackId: string): Promise<Subject[]> {
   if (!trackId || trackId === 'undefined' || trackId === 'null') {
     console.error('❌ track_id غير صحيح أو غير موجود:', trackId);
-    return getCachedSubjects();
+    return [];
   }
 
   try {
     const result = await request<Subject[]>(`/subjects?track_id=${encodeURIComponent(trackId)}`);
-    if (Array.isArray(result) && result.length > 0) {
-      setCachedSubjects(result);
+    if (Array.isArray(result)) {
+      setCachedSubjects(trackId, result);
       return result;
     }
-    const cached = getCachedSubjects();
-    return cached.length > 0 ? cached : [];
+    return [];
   } catch (error) {
     console.error('❌ خطأ أثناء جلب المواد، يتم استخدام الكاش المحلي:', error);
-    const cached = getCachedSubjects();
+    if ((error as any)?.status) throw error;
+    const cached = getCachedSubjects(trackId);
     if (cached.length > 0) return cached;
     throw error;
   }
 }
 
-export function getCachedLessons(subjectId: string): ApiLesson[] {
+function lessonsCacheKey(subjectId: string, trackId?: string) {
+  return `zakker_cached_lessons_${encodeURIComponent(trackId || 'shared')}_${encodeURIComponent(subjectId)}`;
+}
+
+export function getCachedLessons(subjectId: string, trackId?: string): ApiLesson[] {
   try {
-    const cached = localStorage.getItem(`zakker_cached_lessons_${subjectId}`);
+    const cached = localStorage.getItem(lessonsCacheKey(subjectId, trackId));
     return cached ? JSON.parse(cached) : [];
   } catch {
     return [];
   }
 }
 
-export function setCachedLessons(subjectId: string, lessons: ApiLesson[]) {
+export function setCachedLessons(subjectId: string, lessons: ApiLesson[], trackId?: string) {
   try {
     if (Array.isArray(lessons)) {
-      localStorage.setItem(`zakker_cached_lessons_${subjectId}`, JSON.stringify(lessons));
-      localStorage.setItem(`zakker_lessons_time_${subjectId}`, Date.now().toString());
+      localStorage.setItem(lessonsCacheKey(subjectId, trackId), JSON.stringify(lessons));
     }
   } catch (e) {
     console.error('Failed to cache lessons', e);
@@ -246,37 +252,21 @@ export async function getLessonsBySubject(subjectId: string, trackId?: string): 
     return [];
   }
 
-  const cacheKey = `zakker_cached_lessons_${subjectId}`;
-  const cacheTimeKey = `zakker_lessons_time_${subjectId}`;
-  const cachedData = localStorage.getItem(cacheKey);
-  const cachedTime = localStorage.getItem(cacheTimeKey);
-
-  const now = Date.now();
-  const twoDaysInMillis = 2 * 24 * 60 * 60 * 1000;
-
-  if (cachedData && cachedTime && (now - Number(cachedTime) < twoDaysInMillis)) {
-    const parsed = JSON.parse(cachedData);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed;
-    }
-  }
-
   try {
     const query = new URLSearchParams({ subject_id: subjectId });
     if (trackId) query.set('track_id', trackId);
 
     const result = await request<ApiLesson[]>(`/lessons?${query.toString()}`);
 
-    if (Array.isArray(result) && result.length > 0) {
-      setCachedLessons(subjectId, result);
+    if (Array.isArray(result)) {
+      setCachedLessons(subjectId, result, trackId);
       return result;
     }
-
-    const cached = getCachedLessons(subjectId);
-    return cached.length > 0 ? cached : [];
+    return [];
   } catch (error) {
     console.error('❌ خطأ في جلب الدروس، يتم الاعتماد على الكاش المحلي:', error);
-    const cached = getCachedLessons(subjectId);
+    if ((error as any)?.status) throw error;
+    const cached = getCachedLessons(subjectId, trackId);
     if (cached.length > 0) return cached;
     throw error;
   }
@@ -287,6 +277,7 @@ export async function getLessonById(lessonId: string): Promise<LessonDetails> {
     const serverLesson = await request<LessonDetails>(`/lessons/${encodeURIComponent(lessonId)}`);
     return serverLesson;
   } catch (error) {
+    if ((error as any)?.status) throw error;
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith('zakker_cached_lessons_')) {

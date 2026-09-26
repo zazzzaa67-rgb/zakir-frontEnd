@@ -21,7 +21,7 @@ export default function SubjectsScreen() {
   const isMounted = useRef(true);
 
   // تحميل البيانات الأولية مباشرة من الكاش
-  const [subjects, setSubjects] = useState<Subject[]>(() => getCachedSubjects());
+  const [subjects, setSubjects] = useState<Subject[]>(() => getCachedSubjects(getStoredProfile()?.track_id));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -47,7 +47,7 @@ export default function SubjectsScreen() {
 
       const data = await getSubjectsByTrack(profile.track_id);
 
-      if (isMounted.current && Array.isArray(data) && data.length > 0) {
+      if (isMounted.current && Array.isArray(data)) {
         setSubjects(data);
       }
     } catch (err: any) {
@@ -68,10 +68,8 @@ export default function SubjectsScreen() {
   useEffect(() => {
     isMounted.current = true;
 
-    // جلب البيانات فقط إذا كان الكاش فارغاً
-    if (subjects.length === 0) {
-      fetchSubjectsData();
-    }
+    // اعرض الكاش مؤقتاً ثم حدّثه من السيرفر في كل مرة تُفتح فيها الصفحة.
+    fetchSubjectsData();
 
     return () => {
       isMounted.current = false;
