@@ -15,6 +15,7 @@ export type StudentProfile = {
   grade_level: 1 | 2 | 3;
   track_id: string;
   streak?: number;
+  last_active_date?: string | null;
   points: number;
   coins: number;
   gems?: number;

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import Footer from '../components/Footer';
-import { getLeaderboard, getTeam } from '../lib/api';
+import { fetchAndUpdateProfile, getLeaderboard, getTeam } from '../lib/api';
 // 1. استيراد getCachedProfile بدلاً من getStoredProfile (تأكد من المسار الصحيح للملف)
 import { getCachedProfile } from '../lib/profileManager'; 
 
@@ -31,6 +31,9 @@ export default function HomeScreen() {
 
     // تحميل البروفايل فور فتح الشاشة
     loadProfile();
+    fetchAndUpdateProfile().then((currentProfile) => {
+      if (currentProfile) setProfile(currentProfile);
+    });
 
     // الاستماع لحدث profileUpdated للتحديث الفوري للنقاط والـ coins عند أي تغيير
     window.addEventListener('profileUpdated', loadProfile);
@@ -204,8 +207,14 @@ export default function HomeScreen() {
               🔥
             </div>
             <div className="flex-1">
-              <div className="text-lg font-black text-orange-800">7 أيام متتالية</div>
-              <div className="text-orange-600/70 text-sm font-medium mt-0.5">كمّل النهارده عشان تحافظ على الـ Streak!</div>
+              <div className="text-lg font-black text-orange-800">
+                {Number(profile?.streak ?? 0)} {Number(profile?.streak ?? 0) === 1 ? 'يوم متواصل' : 'أيام متواصلة'}
+              </div>
+              <div className="text-orange-600/70 text-sm font-medium mt-0.5">
+                {Number(profile?.streak ?? 0) > 0
+                  ? 'كمّل اختبار بعد مذاكرتك النهارده عشان تحافظ على الـ Streak!'
+                  : 'كمّل اختبار بعد مذاكرتك عشان تبدأ الـ Streak!'}
+              </div>
             </div>
           </div>
         </div>
