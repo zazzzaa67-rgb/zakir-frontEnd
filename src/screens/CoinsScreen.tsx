@@ -37,7 +37,7 @@ export default function CoinsScreen() {
         <p className="mt-2 text-sm text-white/80">استخدم العملات لفتح الدروس الإضافية.</p>
       </header>
 
-      <main className="flex-1 overflow-y-auto space-y-4 px-5 py-5 pb-24">
+      <main className="mx-auto flex-1 w-full overflow-y-auto space-y-4 px-5 py-5 pb-24 md:max-w-4xl">
         <section className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-black text-violet-950">الجواهر 💎</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">الجواهر دي تقدر تشترك بيها في مسابقات منصة فهمتها يا بطل</p>

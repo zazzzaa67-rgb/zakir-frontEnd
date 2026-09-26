@@ -61,7 +61,7 @@ export default function HomeScreen() {
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF] text-right">
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto pb-24">
+      <div className="mx-auto flex-1 overflow-y-auto pb-24 lg:max-w-[1280px]">
 
         {/* Header */}
         <div
@@ -227,7 +227,7 @@ export default function HomeScreen() {
             </button>
             <h2 className="text-slate-900 text-lg font-black">الأدوات السريعة</h2>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-3 lg:grid-cols-6">
             {quickActions.map((action) => (
               <button
                 key={action.label}

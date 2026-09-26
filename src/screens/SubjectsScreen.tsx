@@ -113,7 +113,7 @@ export default function SubjectsScreen() {
       </div>
 
       {/* Main Container */}
-      <div className="flex-1 overflow-y-auto p-5 pb-24">
+      <div className="mx-auto flex-1 overflow-y-auto p-5 pb-24 md:max-w-6xl">
         {/* Stats */}
         <div className="flex gap-3 mb-5">
           <div className="flex-1 bg-white rounded-2xl p-4 text-center" style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
@@ -148,7 +148,7 @@ export default function SubjectsScreen() {
 
         {/* عرض المواد في حال وجود بيانات من الكاش حتى لو كان السيرفر متوقفاً */}
         {subjects.length > 0 && (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
             {subjects.map((subject, index) => {
               const [icon, color, bg] = subjectStyles[index % subjectStyles.length];
               const total = (subject.books ?? []).reduce(

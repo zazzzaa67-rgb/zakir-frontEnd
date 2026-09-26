@@ -43,12 +43,9 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-950 flex items-center justify-center">
-        <div
-          dir="rtl"
-          className="relative bg-[#F0F4FF] overflow-hidden w-full h-[100dvh] md:w-[390px] md:h-[844px] md:rounded-[40px]"
-          style={{ boxShadow: '0 0 0 8px #0f172a, 0 40px 80px rgba(0,0,0,0.6)' }}
-        >
+      <div className="app-viewport min-h-dvh bg-[#F0F4FF]">
+        <div dir="rtl" className="relative h-[100dvh] w-full overflow-hidden bg-[#F0F4FF]">
+          <div className="app-route-content h-full w-full lg:pl-24">
           <Routes>
             <Route path="/" element={isAuthenticated ? <Navigate to="/home" replace /> : <SplashScreen />} />
             <Route path="/onboarding" element={<OnboardingScreen />} />
@@ -85,6 +82,7 @@ export default function App() {
             {/* توجيه أي مسار غير معروف إلى الصفحة الرئيسية */}
             <Route path="*" element={<Navigate to={isAuthenticated ? "/home" : "/"} replace />} />
           </Routes>
+          </div>
         </div>
       </div>
     </BrowserRouter>

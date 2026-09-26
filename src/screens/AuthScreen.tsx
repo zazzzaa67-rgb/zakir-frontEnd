@@ -45,7 +45,7 @@ export default function AuthScreen() {
           </div>
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-3xl shadow-xl">🎓</div>
         </div>
-        <div className="rounded-[28px] border border-white/10 bg-white/[0.08] p-5 backdrop-blur-xl">
+        <div className="mx-auto rounded-[28px] border border-white/10 bg-white/[0.08] p-5 backdrop-blur-xl md:max-w-xl">
           <div className="mb-6 flex rounded-2xl bg-black/20 p-1">
             {(['signin', 'signup'] as const).map((item) => (
               <button

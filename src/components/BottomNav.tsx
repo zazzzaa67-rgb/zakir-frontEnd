@@ -17,7 +17,7 @@ export default function BottomNav({ active }: BottomNavProps) {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex items-center justify-around px-2 pb-4 pt-2 z-50"
+      className="app-navigation fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex items-center justify-around px-2 pb-4 pt-2 z-50 lg:inset-y-0 lg:right-auto lg:w-24 lg:flex-col lg:justify-center lg:gap-8 lg:border-r lg:border-t-0 lg:px-3 lg:py-8 lg:pb-8"
       style={{ boxShadow: '0 -4px 20px rgba(0,0,0,0.06)' }}
     >
       {tabs.map((tab) =>
@@ -25,7 +25,7 @@ export default function BottomNav({ active }: BottomNavProps) {
           <button
             key={tab.id}
             onClick={() => navigate(tab.path)}
-            className="flex flex-col items-center -mt-6 cursor-pointer"
+            className="flex flex-col items-center -mt-6 cursor-pointer lg:mt-0"
           >
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-lg transition-transform active:scale-95"

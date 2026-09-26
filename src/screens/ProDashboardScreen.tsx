@@ -31,7 +31,7 @@ export default function ProDashboardScreen() {
         </div>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-2 gap-3 px-5 mt-4">
+        <div className="grid grid-cols-2 gap-3 px-5 mt-4 md:grid-cols-4">
           {[
             { label: 'وقت المذاكرة', value: '4.5 ساعة', icon: '⏱️', color: '#1E6FF0', bg: '#EFF6FF' },
             { label: 'دروس مكتملة', value: '12 درس', icon: '📚', color: '#10B981', bg: '#F0FDF4' },

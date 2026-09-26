@@ -11,6 +11,28 @@ body {
   font-family: 'Cairo', sans-serif;
 }
 
+.app-route-content {
+  box-sizing: border-box;
+}
+
+.app-route-content > * {
+  width: 100%;
+  height: 100%;
+}
+
+@media (min-width: 1600px) {
+  .app-route-content > * {
+    max-width: 1440px;
+    margin-inline: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-navigation {
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.06) !important;
+  }
+}
+
 ::-webkit-scrollbar {
   display: none;
 }
