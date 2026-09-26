@@ -50,7 +50,7 @@ export default function App() {
           style={{ boxShadow: '0 0 0 8px #0f172a, 0 40px 80px rgba(0,0,0,0.6)' }}
         >
           <Routes>
-            <Route path="/" element={<SplashScreen />} />
+            <Route path="/" element={isAuthenticated ? <Navigate to="/home" replace /> : <SplashScreen />} />
             <Route path="/onboarding" element={<OnboardingScreen />} />
             <Route path="/auth" element={<AuthScreen />} />
             <Route path="/setup" element={<ProfileSetupScreen />} />

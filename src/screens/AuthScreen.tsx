@@ -61,6 +61,7 @@ export default function AuthScreen() {
           <input dir="ltr" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="student@example.com" className="mb-4 w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-4 text-left outline-none placeholder:text-white/30 focus:border-cyan-300" />
           <label className="mb-2 block text-xs font-bold text-white/60">كلمة المرور</label>
           <input dir="ltr" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="6 أحرف على الأقل" className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-4 text-left outline-none placeholder:text-white/30 focus:border-cyan-300" />
+          {mode === 'signin' && <p className="mt-2 text-xs font-bold text-cyan-200">احفظ كلمة المرور يا بطل، علشان دي اللي هتسجل بيها.</p>}
           {error && <p className="mt-3 rounded-xl bg-red-400/15 p-3 text-sm font-bold text-red-200">{error}</p>}
           <button disabled={!isValidEmail || password.length < 6 || loading} onClick={submit} className="mt-6 w-full rounded-2xl bg-cyan-300 py-4 font-black text-[#08203b] shadow-lg shadow-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer">{loading ? 'لحظة...' : mode === 'signin' ? 'ادخل حسابك ←' : 'كمّل بياناتك ←'}</button>
         </div>

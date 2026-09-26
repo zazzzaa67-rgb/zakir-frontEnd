@@ -5,6 +5,8 @@ const normalizedApiUrl = configuredApiUrl.replace(/\/$/, '').replace(/\/(?:api\/
 const API_URL = normalizedApiUrl.endsWith('/api')
   ? normalizedApiUrl
   : `${normalizedApiUrl}/api`;
+const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+const SESSION_EXPIRES_AT_KEY = 'zakker_session_expires_at';
 
 export type StudentProfile = {
   id: string;
@@ -15,6 +17,7 @@ export type StudentProfile = {
   streak?: number;
   points: number;
   coins: number;
+  gems?: number;
 };
 
 export type Subject = {
@@ -67,6 +70,11 @@ export type LessonDetails = ApiLesson & {
 };
 
 export function getAccessToken() {
+  const expiresAt = Number(localStorage.getItem(SESSION_EXPIRES_AT_KEY));
+  if (expiresAt && Date.now() >= expiresAt) {
+    clearAuth();
+    return null;
+  }
   return localStorage.getItem('zakker_access_token');
 }
 
@@ -74,6 +82,7 @@ export function clearAuth() {
   localStorage.removeItem('zakker_access_token');
   localStorage.removeItem('zakker_refresh_token');
   localStorage.removeItem('zakker_profile');
+  localStorage.removeItem(SESSION_EXPIRES_AT_KEY);
 }
 
 export function getStoredProfile(): StudentProfile | null {
@@ -86,13 +95,21 @@ export function getStoredProfile(): StudentProfile | null {
   }
 }
 
-function storeSession(result: { accessToken: string; refreshToken: string; profile: StudentProfile }) {
+function storeSession(result: { accessToken: string; refreshToken: string; profile: StudentProfile }, startNewSession = false) {
+  if (startNewSession || !localStorage.getItem(SESSION_EXPIRES_AT_KEY)) {
+    localStorage.setItem(SESSION_EXPIRES_AT_KEY, String(Date.now() + SESSION_DURATION_MS));
+  }
   localStorage.setItem('zakker_access_token', result.accessToken);
   localStorage.setItem('zakker_refresh_token', result.refreshToken);
   localStorage.setItem('zakker_profile', JSON.stringify(result.profile));
 }
 
 export async function restoreSession() {
+  const expiresAt = Number(localStorage.getItem(SESSION_EXPIRES_AT_KEY));
+  if (expiresAt && Date.now() >= expiresAt) {
+    clearAuth();
+    return null;
+  }
   const refreshToken = localStorage.getItem('zakker_refresh_token');
   if (!refreshToken) return null;
   try {
@@ -146,7 +163,7 @@ export async function signIn(email: string, password: string) {
   const result = await request<{ accessToken: string; refreshToken: string; profile: StudentProfile }>('/auth/signin', {
     method: 'POST', body: JSON.stringify({ email, password }),
   });
-  storeSession(result);
+  storeSession(result, true);
   return result.profile;
 }
 
@@ -154,7 +171,7 @@ export async function signUp(payload: { email: string; password: string; display
   const result = await request<{ accessToken: string; refreshToken: string; profile: StudentProfile }>('/auth/signup', {
     method: 'POST', body: JSON.stringify(payload),
   });
-  storeSession(result);
+  storeSession(result, true);
   return result.profile;
 }
 
@@ -325,6 +342,10 @@ export async function submitExamResult(userId: string, isPerfectScore: boolean) 
       body: JSON.stringify({ userId, isPerfectScore }),
     }
   );
+}
+
+export async function buyGem() {
+  return request<{ coins: number; gems: number }>('/student/buy-gem', { method: 'POST' });
 }
 
 // 3. جلب الأخطاء الخاصة بالطالب (تطابق مع الـ Backend route: /student/errors)
