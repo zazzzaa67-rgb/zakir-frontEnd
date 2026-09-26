@@ -14,8 +14,6 @@ const tracks = {
     { id: 'scientific_science_3rd', label: 'علمي علوم' },
     { id: 'scientific_math_3rd', label: 'علمي رياضة' },
     { id: 'literary_3rd', label: 'أدبي' },
-    { id: 'business_3rd', label: 'الأعمال - بكالوريا' },
-    { id: 'arts_3rd', label: 'الآداب والفنون - بكالوريا' },
   ],
 } as const;
 

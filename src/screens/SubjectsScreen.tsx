@@ -53,9 +53,11 @@ export default function SubjectsScreen() {
     } catch (err: any) {
       if (isMounted.current) {
         console.error('Failed to load subjects:', err);
-        // إذا كان هناك مواد في الكاش، لا نظهر رسالة خطأ تحجب الشاشة
-        if (subjects.length === 0) {
-          setError('حدث خطأ أثناء اتصال بالخادم (404 / Connection Reset)');
+        if (err?.status === 404 || err?.status === 409) {
+          setSubjects([]);
+          setError(err.message);
+        } else if (subjects.length === 0) {
+          setError(err instanceof Error ? err.message : 'تعذر الاتصال بالخادم. حاول مرة أخرى.');
         }
       }
     } finally {
