@@ -61,7 +61,7 @@ export default function HomeScreen() {
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF] text-right">
       {/* Scrollable content */}
-      <div className="mx-auto flex-1 overflow-y-auto pb-24 lg:max-w-[1280px]">
+      <div className="mx-auto w-full flex-1 overflow-y-auto pb-24 lg:max-w-[1440px]">
 
         {/* Header */}
         <div
