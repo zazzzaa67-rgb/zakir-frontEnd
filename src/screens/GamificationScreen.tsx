@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { getCachedProfile } from '../lib/profileManager';
 import { fetchAndUpdateProfile, getStudentLeaderboard } from '../lib/api';
@@ -19,13 +18,24 @@ interface LeaderboardUser {
   id: string;
   name: string;
   points: number;
+  isMe?: boolean;
 }
 
 export default function GamificationScreen() {
-  const navigate = useNavigate();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(() => {
+    const cached = getCachedProfile();
+    if (!cached) return null;
+    const points = Number(cached.points ?? 0);
+    const current = points % 250;
+    return {
+      points,
+      level: Math.floor(points / 250) + 1,
+      streak: cached.streak ?? 0,
+      points_progress: { current, target: 250, percentage: Math.round((current / 250) * 100) },
+    };
+  });
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
 
   useEffect(() => {
     // 1. دالة لتجهيز وقراءة بيانات البروفايل المحلية
@@ -41,7 +51,7 @@ export default function GamificationScreen() {
         setProfile({
           points: currentPoints,
           level: calculatedLevel,
-          streak: cached.streak ?? cached.streak_days ?? 0,
+          streak: cached.streak ?? 0,
           points_progress: {
             current: currentProgress,
             target: targetPoints,
@@ -57,54 +67,35 @@ export default function GamificationScreen() {
     // 3. الاستماع للتحديثات اللحظية للبروفايل
     window.addEventListener('profileUpdated', loadLocalProfile);
 
-    // 4. دالة جلب البيانات من ה-API مع معالجة الأخطاء
-    async function fetchData() {
-      try {
-        const [profileResult, leaderboardResult] = await Promise.allSettled([
-          fetchAndUpdateProfile(),
-          getStudentLeaderboard(),
-        ]);
-        if (profileResult.status === 'fulfilled' && profileResult.value) {
-          const profileData = profileResult.value;
-          const points = profileData.points ?? 0;
-          const current = points % 250;
-          setProfile({
-            points,
-            level: Math.floor(points / 250) + 1,
-            streak: profileData.streak ?? 0,
-            points_progress: {
-              current,
-              target: 250,
-              percentage: Math.round((current / 250) * 100),
-            },
-          });
-        }
-        if (leaderboardResult.status === 'fulfilled') {
-          setLeaderboard(leaderboardResult.value);
-        }
-      } catch (err) {
-        console.error('Error loading gamification data:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
+    let isMounted = true;
+    fetchAndUpdateProfile()
+      .then((profileData) => {
+        if (!isMounted || !profileData) return;
+        const points = Number(profileData.points ?? 0);
+        const current = points % 250;
+        setProfile({
+          points,
+          level: Math.floor(points / 250) + 1,
+          streak: profileData.streak ?? 0,
+          points_progress: { current, target: 250, percentage: Math.round((current / 250) * 100) },
+        });
+      })
+      .catch((err) => console.error('Error loading gamification profile:', err));
 
-    fetchData();
+    getStudentLeaderboard()
+      .then((players) => {
+        if (isMounted) setLeaderboard(players);
+      })
+      .catch((err) => console.error('Error loading leaderboard:', err))
+      .finally(() => {
+        if (isMounted) setLeaderboardLoading(false);
+      });
 
     return () => {
+      isMounted = false;
       window.removeEventListener('profileUpdated', loadLocalProfile);
     };
   }, []);
-
-  if (loading) {
-    return (
-      <div role="status" aria-live="polite" className="w-full h-full flex flex-col items-center justify-center gap-3 bg-[#F0F4FF] text-slate-600 font-bold">
-        <span className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-        <span>جاري التحميل...</span>
-      </div>
-    );
-  }
-
   const currentLevel = profile?.level || 1;
   const currentProgress = profile?.points_progress?.current || 0;
   const targetProgress = profile?.points_progress?.target || 250;
@@ -112,7 +103,7 @@ export default function GamificationScreen() {
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
-      {loading && (
+      {leaderboardLoading && (
         <div role="status" aria-live="polite" className="flex items-center justify-center gap-2 bg-blue-50 py-2 text-sm font-bold text-blue-700">
           <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
           <span>جاري تحميل البيانات...</span>
@@ -182,14 +173,13 @@ export default function GamificationScreen() {
               leaderboard.map((player, index) => (
                 <div
                   key={player.id || index}
-                  className="rounded-2xl px-4 py-3 flex items-center gap-3 bg-white"
-                  style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+                  className={`rounded-2xl border px-4 py-3 flex items-center gap-3 transition-colors ${player.isMe ? 'border-blue-500 bg-blue-50/80 ring-2 ring-blue-200 shadow-[0_4px_14px_rgba(37,99,235,0.14)]' : 'border-transparent bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]'}`}
                 >
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm">
                     #{index + 1}
                   </div>
                   <div className="flex-1 text-right">
-                    <div className="font-black text-sm text-slate-900">{player.name}</div>
+                    <div className="font-black text-sm text-slate-900 flex items-center justify-end gap-2">{player.name}{player.isMe && <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] text-white">YOU</span>}</div>
                   </div>
                   <div className="font-black text-sm text-blue-600">
                     {player.points?.toLocaleString() || 0}
