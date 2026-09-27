@@ -24,6 +24,7 @@ import AuthScreen from './screens/AuthScreen';
 import TeamScreen from './screens/TeamScreen';
 import ArticlesScreen from './screens/ArticlesScreen';
 import PrivacyPolicy from './screens/PrivacyPolicy';
+import AboutUs from './screens/AboutUs';
 import { restoreSession } from './lib/api';
 
 export default function App() {
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/articles" element={<ArticlesScreen />} />
             <Route path="/articles/:articleId" element={<ArticlesScreen />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/about" element={<AboutUs />} />
             <Route path="/subjects" element={<SubjectsScreen />} />
             <Route path="/lesson-list/:subjectId" element={<LessonListScreen />} />
             {/* المسارات التي تتطلب parameters تصبح جزءاً من الـ URL بشكل دائم */}
