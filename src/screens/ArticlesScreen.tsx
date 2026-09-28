@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
-import BottomNav from '../components/BottomNav';
+import Footer from '../components/Footer';
 
 const articles = [
   {
@@ -177,7 +177,7 @@ export default function ArticlesScreen() {
           </section>
         )}
       </main>
-      <BottomNav active="home" />
+      <Footer />
     </div>
   );
 }
