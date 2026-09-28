@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
-import SplashScreen from './screens/SplashScreen';
+import PublicLandingScreen from './screens/PublicLandingScreen';
+import SampleLessonScreen from './screens/SampleLessonScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -48,7 +49,8 @@ export default function App() {
         <div dir="rtl" className="relative h-[100dvh] w-full overflow-hidden bg-[#F0F4FF]">
           <div className="app-route-content h-full w-full lg:pl-24">
           <Routes>
-            <Route path="/" element={isAuthenticated ? <Navigate to="/home" replace /> : <SplashScreen />} />
+            <Route path="/" element={isAuthenticated ? <Navigate to="/home" replace /> : <PublicLandingScreen />} />
+            <Route path="/demo/:lessonId" element={<SampleLessonScreen />} />
             <Route path="/onboarding" element={<OnboardingScreen />} />
             <Route path="/auth" element={<AuthScreen />} />
             <Route path="/setup" element={<ProfileSetupScreen />} />

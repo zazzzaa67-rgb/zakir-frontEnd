@@ -1,61 +1,181 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 
 const articles = [
   {
     id: 'productive-study',
-    title: 'ذاكر بذكاء: الإنتاجية والتركيز في وقت أقل',
-    description: 'خطوات بسيطة لتنظيم وقتك، واختيار طريقة مذاكرة فعالة، ومقاومة المشتتات.',
+    title: 'ذاكر بذكاء: خطوات عملية لمذاكرة أكثر فاعلية',
+    description: 'خطط جلسة مذاكرة واضحة، واسترجع المعلومات من ذاكرتك، وراجعها على فترات بدل إعادة القراءة بلا هدف.',
     image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1000&q=85',
     imageAlt: 'دفتر وأدوات دراسة على مكتب',
+    sections: [
+      {
+        heading: 'ابدأ بهدف صغير ومحدد',
+        paragraphs: [
+          'قبل أن تفتح الكتاب، اكتب ما الذي تريد إنجازه بالضبط. عبارة مثل «سأذاكر العلوم» واسعة وقد تجعلك تؤجل البداية. جرّب بدلًا منها: «سأفهم درس الخلية وأحل خمس مسائل عليه». الهدف المحدد يساعدك على معرفة متى تبدأ ومتى انتهيت.',
+          'قسّم الدرس إلى أجزاء قصيرة، ورتبها من الأصعب إلى الأسهل أو حسب ترتيب المنهج. جهّز الكتاب والأدوات والماء قبل الجلسة حتى لا تقطع تركيزك كل بضع دقائق.',
+        ],
+      },
+      {
+        heading: 'استرجع المعلومة بدل الاكتفاء بإعادة قراءتها',
+        paragraphs: [
+          'بعد قراءة فقرة أو شرح فكرة، أغلق الكتاب وحاول أن تشرحها بصوتك أو تكتب أهم نقاطها من الذاكرة. ارجع للمصدر بعد ذلك وحدد ما نسيته أو فهمته بشكل غير دقيق. هذه المحاولة تكشف الفجوات التي قد تخفيها القراءة المتكررة.',
+          'حوّل عناوين الدرس إلى أسئلة، مثل: «ما وظيفة هذا الجزء؟» أو «لماذا تحدث هذه الخطوة؟». أجب عنها من دون النظر إلى الكتاب، ثم صحح إجابتك. وفي المواد الحسابية، حل مسألة جديدة بدل الاكتفاء بمشاهدة الحل.',
+        ],
+      },
+      {
+        heading: 'راجع على فترات وخذ استراحة مناسبة',
+        paragraphs: [
+          'بدل أن تترك الدرس حتى ليلة الامتحان، ارجع إلى النقاط الأساسية بعد يوم، ثم بعد عدة أيام، ثم بعد أسبوع. اجعل المراجعة قصيرة ومبنية على الأسئلة والأمثلة التي أخطأت فيها.',
+          'جرّب جلسة تركيز مدتها 25 إلى 40 دقيقة، ثم استراحة قصيرة تتحرك فيها وتشرب الماء. لا توجد مدة واحدة تناسب الجميع؛ اختر مدة تستطيع الحفاظ فيها على انتباهك، وأبعد الهاتف أو أوقف إشعاراته أثناء الجلسة.',
+        ],
+      },
+      {
+        heading: 'خطة تبدأ بها اليوم',
+        paragraphs: [
+          'اختر درسًا واحدًا، واكتب هدفًا واضحًا له، وذاكره في جلسة مركزة. بعد القراءة، اكتب خمس أسئلة وأجب عنها من الذاكرة، ثم سجل الأخطاء وحدد موعدًا قصيرًا لمراجعتها غدًا. الاستمرار على خطة بسيطة أفضل من انتظار جلسة مثالية طويلة.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'study-motivation',
+    title: 'كيف تحافظ على حماسك للمذاكرة حتى في الأيام الصعبة؟',
+    description: 'لا تنتظر أن يأتيك الحماس؛ صمّم بداية سهلة وروتينًا مرنًا يساعدك على الاستمرار من غير ضغط زائد.',
+    image: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1000&q=85',
+    imageAlt: 'مفكرة مفتوحة لتنظيم المهام',
+    sections: [
+      {
+        heading: 'افهم الفرق بين الهدف والخطوة التالية',
+        paragraphs: [
+          'قد يكون هدفك الحصول على نتيجة جيدة أو فهم مادة صعبة، لكن هذه الأهداف بعيدة ولا تخبرك بما تفعله الآن. حوّل الهدف إلى خطوة صغيرة يمكن تنفيذها خلال دقائق، مثل حل سؤال واحد أو قراءة صفحتين وتلخيصهما.',
+          'في الأيام التي تقل فيها رغبتك، اتفق مع نفسك على بداية مدتها خمس دقائق فقط. غالبًا تكون أصعب لحظة هي الانتقال من الراحة إلى العمل. بعد البداية يمكنك أن تقرر الاستمرار أو أخذ استراحة قصيرة، من دون أن تحكم على نفسك بالفشل.',
+        ],
+      },
+      {
+        heading: 'اربط المذاكرة بعادة موجودة',
+        paragraphs: [
+          'اختر إشارة ثابتة لبداية المذاكرة: بعد الغداء مثلًا، أو بعد ترتيب المكتب، أو في وقت محدد بعد العودة من المدرسة. كرر الترتيب نفسه قدر الإمكان حتى يصبح البدء مألوفًا وأقل اعتمادًا على المزاج.',
+          'جهز مكانك من الليلة السابقة، واكتب أول مهمة في ورقة ظاهرة. عندما تجلس، لن تحتاج إلى اتخاذ قرارات كثيرة قبل أن تبدأ. وأبعد المشتتات التي تعرف أنها تقاطعك، مثل الهاتف أو فتح عدة نوافذ في الوقت نفسه.',
+        ],
+      },
+      {
+        heading: 'تابع التقدم من دون أن تطلب الكمال',
+        paragraphs: [
+          'استخدم قائمة قصيرة تسجل فيها ما أنجزته فعلًا، لا عدد الساعات فقط. حل المسائل أو إنهاء ملخص واضح قد يكون تقدمًا أفضل من الجلوس طويلًا مع تشتت. احتفل بالالتزام بخطتك بمكافأة بسيطة لا تعطل نومك أو مذاكرتك.',
+          'إذا فاتتك جلسة، لا تحاول تعويض كل شيء بجدول مرهق. ارجع إلى خطوتك التالية وعدّل الخطة حسب الوقت المتاح. التعثر جزء طبيعي من أي عادة، والعودة الهادئة أهم من لوم النفس.',
+        ],
+      },
+      {
+        heading: 'وازن بين المذاكرة واحتياجاتك',
+        paragraphs: [
+          'قلة النوم والجوع والإرهاق تجعل التركيز أصعب. خطط لفترات راحة ونوم منتظم، واطلب مساعدة معلم أو زميل عندما تتعطل عند نقطة لا تفهمها. طلب المساعدة يوفر وقتًا ويمنع تراكم الإحباط.',
+          'اكتب في نهاية اليوم مهمة واحدة أنجزتها ومهمة واحدة ستبدأ بها غدًا. بهذه الطريقة ترى تقدمك بوضوح وتدخل اليوم التالي بخطوة جاهزة بدل أن تبدأ من الصفر.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'reading-and-mind',
+    title: 'القراءة وتركيز العقل: كيف تقرأ لتفهم وتتذكر؟',
+    description: 'اجعل القراءة نشطة: اسأل، توقّع، لخّص، واربط الأفكار الجديدة بما تعرفه بدل المرور على الكلمات بسرعة.',
+    image: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1000&q=85',
+    imageAlt: 'كتب مرتبة على رف في مكتبة',
+    sections: [
+      {
+        heading: 'حدد غرضك قبل أن تبدأ',
+        paragraphs: [
+          'اسأل نفسك: هل أقرأ للحصول على الفكرة العامة، أم للبحث عن إجابة، أم لدراسة تفاصيل موضوع؟ الغرض يحدد سرعة القراءة وما الذي تحتاج إلى تدوينه. تصفح العناوين والصور والكلمات البارزة أولًا لتكوّن خريطة سريعة للموضوع.',
+          'حوّل العنوان إلى سؤال. إذا كان الفصل عن الطاقة مثلًا، اسأل: ما أنواعها؟ وكيف تتحول من شكل إلى آخر؟ ستصبح القراءة بحثًا عن إجابات، بدل أن تكون متابعة سلبية للسطر بعد السطر.',
+        ],
+      },
+      {
+        heading: 'توقف لتشرح الفكرة بلغتك',
+        paragraphs: [
+          'اقرأ جزءًا قصيرًا، ثم توقف واشرح فكرته من ذاكرتك بكلمات بسيطة. إذا لم تستطع، أعد قراءة الجزء وابحث عن النقطة التي انقطعت عندها الفكرة. لا تنسخ الفقرة كاملة؛ اكتب جملة أو مثالًا يوضح معناها.',
+          'اربط المعلومة بمثال تعرفه أو بمعلومة درستها من قبل. الروابط تساعدك على فهم العلاقات بين الأفكار، كما تجعل تذكرها أسهل من حفظ كلمات منفصلة بلا معنى.',
+        ],
+      },
+      {
+        heading: 'قلل المشتتات واختر طريقة تدوين بسيطة',
+        paragraphs: [
+          'ضع الهاتف بعيدًا أو فعّل وضع التركيز، واقرأ في مكان بإضاءة مريحة. إذا شرد ذهنك، ارجع إلى آخر فقرة تتذكر معناها، واكتب السؤال الذي تبحث عن إجابته. لا تحتاج إلى إعادة الصفحة كلها كل مرة.',
+          'استخدم كلمات مفتاحية أو خريطة صغيرة أو أسئلة وأجوبة. اختر طريقة تساعدك على استرجاع الفكرة لاحقًا، وتجنب تلوين معظم الصفحة؛ كثرة العلامات تجعل المهم أقل وضوحًا.',
+        ],
+      },
+      {
+        heading: 'راجع ما قرأته باختبار قصير',
+        paragraphs: [
+          'بعد الانتهاء، أغلق الكتاب واكتب ثلاث أفكار رئيسية وسؤالًا ما زال لديك. في اليوم التالي، حاول الإجابة عن السؤال من الذاكرة قبل أن تفتح المصدر. بهذه الخطوة ستعرف ما بقي واضحًا وما يحتاج إلى مراجعة.',
+          'ابدأ بوقت قراءة واقعي يناسب يومك، حتى لو كان عشر دقائق. اختر موضوعًا يهمك، واجعل الهاتف بعيدًا خلال هذه المدة. زيادة الوقت تأتي تدريجيًا عندما تصبح العادة أسهل.',
+        ],
+      },
+    ],
   },
 ];
 
 export default function ArticlesScreen() {
-  const navigate = useNavigate();
   const { articleId } = useParams();
+  const article = articles.find((item) => item.id === articleId);
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#F0F4FF] text-right">
+    <div dir="rtl" className="flex h-full w-full flex-col bg-[#F0F4FF] text-right">
       <main className="flex-1 overflow-y-auto pb-24">
-        <header className="bg-gradient-to-l from-blue-700 to-indigo-700 px-5 pt-12 pb-7 text-white">
-          <button onClick={() => navigate('/home')} className="mb-5 text-sm font-bold text-white/80">العودة للرئيسية ←</button>
-          <h1 className="text-2xl font-black">مقالات تساعدك تذاكر</h1>
-          <p className="mt-2 text-sm text-white/75">أفكار عملية لتحسين مذاكرتك كل يوم.</p>
+        <header className="bg-gradient-to-l from-blue-700 to-indigo-700 px-5 pb-7 pt-12 text-white">
+          <Link to="/home" className="mb-5 inline-block text-sm font-bold text-white/80 hover:text-white">
+            العودة للرئيسية ←
+          </Link>
+          <h1 className="text-2xl font-black">مقالات تساعدك على المذاكرة</h1>
+          <p className="mt-2 text-sm leading-6 text-white/80">
+            أفكار عملية عن التعلم والتحفيز والقراءة، تساعدك على بناء عادات دراسية تناسبك.
+          </p>
         </header>
 
-        {!articleId && <section className="px-5 py-5">
-          {articles.map((article) => (
-            <button
-              key={article.id}
-              onClick={() => navigate(`/articles/${article.id}`)}
-              className="w-full overflow-hidden rounded-3xl bg-white text-right shadow-sm transition-transform active:scale-[0.99]"
-            >
-              <img src={article.image} alt={article.imageAlt} className="h-48 w-full object-cover" />
-              <div className="p-4">
-                <h2 className="text-lg font-black text-slate-900">{article.title}</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{article.description}</p>
-                <span className="mt-3 inline-block text-sm font-bold text-blue-600">اقرأ المقال ←</span>
-              </div>
-            </button>
-          ))}
-        </section>}
-
-        {articles.filter((article) => !articleId || article.id === articleId).map((article) => (
-          <article key={article.id} className="mx-5 mb-5 rounded-3xl bg-white p-5 shadow-sm">
-            <h2 className="text-xl font-black text-slate-900">{article.title}</h2>
-            <div className="mt-4 space-y-4 text-sm leading-7 text-slate-700">
-              <p>المذاكرة الفعالة مش معناها إنك تقعد ساعات طويلة قدام الكتاب؛ الأهم إنك تذاكر بهدف واضح، وتدي انتباهك فرصة يشتغل من غير مقاطعة. ابدأ بتحديد مهمة صغيرة، زي حل خمس مسائل أو مراجعة درس واحد، واكتبها قدامك قبل ما تبدأ.</p>
-              <h3 className="text-base font-black text-slate-900">نظّم وقتك على جلسات قصيرة</h3>
-              <p>جرّب تذاكر ٢٥ دقيقة بتركيز، وبعدها خد راحة خمس دقايق. في وقت الراحة قوم اتحرك واشرب مياه، وبعد أربع جلسات خد راحة أطول. لو المدة دي مش مناسبة ليك، اختار مدة تقدر تحافظ فيها على تركيزك؛ المهم تبدأ وتلتزم بالخطة.</p>
-              <h3 className="text-base font-black text-slate-900">ذاكر بطريقة تخلي المعلومة تثبت</h3>
-              <p>بعد ما تقرأ جزء صغير، اقفل الكتاب وحاول تشرح الفكرة من ذاكرتك بكلامك. حل أسئلة، واكتب النقاط اللي نسيتها، وارجع لها بعد فترة ثم راجعها في الأيام التالية. استرجاع المعلومة بنفسك غالبًا أفيد من إعادة القراءة مرات كتير.</p>
-              <h3 className="text-base font-black text-slate-900">قلّل المشتتات وارجع بهدوء</h3>
-              <p>حط الموبايل بعيد أو فعّل وضع عدم الإزعاج، وجهّز أدواتك قبل الجلسة. لو سرحت، لاحظ ده من غير لوم لنفسك، واكتب الفكرة اللي شغلتك لو محتاجة متابعة، وبعدها ارجع للمهمة. النوم الكافي والماء والحركة الخفيفة بيساعدوا تركيزك كمان.</p>
-              <p className="rounded-2xl bg-blue-50 p-4 font-bold text-blue-900">ابدأ النهارده بجلسة واحدة: مهمة واضحة، موبايل بعيد، وخمس دقايق راحة بعد ما تخلص.</p>
+        {article ? (
+          <article className="mx-auto my-5 max-w-3xl rounded-3xl bg-white p-5 shadow-sm sm:p-8">
+            <Link to="/articles" className="text-sm font-bold text-blue-700 hover:text-blue-900">
+              ← كل المقالات
+            </Link>
+            <h2 className="mt-4 text-2xl font-black leading-relaxed text-slate-900">{article.title}</h2>
+            <p className="mt-3 border-b border-slate-100 pb-5 text-base leading-8 text-slate-600">
+              {article.description}
+            </p>
+            <div className="mt-5 space-y-7">
+              {article.sections.map((section) => (
+                <section key={section.heading}>
+                  <h3 className="text-lg font-black text-slate-900">{section.heading}</h3>
+                  <div className="mt-2 space-y-3 text-base leading-8 text-slate-700">
+                    {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                  </div>
+                </section>
+              ))}
             </div>
+            <Link to="/articles" className="mt-8 inline-block font-bold text-blue-700 hover:text-blue-900">
+              استكشف باقي المقالات ←
+            </Link>
           </article>
-        ))}
+        ) : articleId ? (
+          <section className="mx-auto my-5 max-w-3xl rounded-3xl bg-white p-6 text-slate-700 shadow-sm">
+            <h2 className="text-xl font-black text-slate-900">المقال غير موجود</h2>
+            <p className="mt-2 leading-7">قد يكون الرابط غير صحيح أو أن المقال لم يعد متاحًا.</p>
+            <Link to="/articles" className="mt-4 inline-block font-bold text-blue-700">العودة إلى المقالات</Link>
+          </section>
+        ) : (
+          <section className="mx-auto grid w-full max-w-5xl gap-4 px-4 py-5 sm:grid-cols-2 lg:grid-cols-3">
+            {articles.map((item) => (
+              <article key={item.id} className="overflow-hidden rounded-3xl bg-white shadow-sm">
+                <img src={item.image} alt={item.imageAlt} loading="lazy" className="h-48 w-full object-cover" />
+                <div className="p-5">
+                  <h2 className="text-lg font-black leading-7 text-slate-900">{item.title}</h2>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">{item.description}</p>
+                  <Link to={`/articles/${item.id}`} className="mt-4 inline-block font-bold text-blue-700 hover:text-blue-900">
+                    اقرأ المقال ←
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </section>
+        )}
       </main>
       <BottomNav active="home" />
     </div>
