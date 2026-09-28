@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { getAccessToken } from '../lib/api';
 
 interface BottomNavProps {
   active: 'home' | 'subjects' | 'ai_lesson' | 'coins' | 'gamification' | 'profile';
@@ -6,6 +7,7 @@ interface BottomNavProps {
 
 export default function BottomNav({ active }: BottomNavProps) {
   const navigate = useNavigate();
+  if (!getAccessToken()) return null;
 
   const tabs = [
     { id: 'home' as const, path: '/home', icon: '🏠', label: 'الرئيسية' },

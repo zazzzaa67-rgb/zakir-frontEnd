@@ -47,7 +47,7 @@ export default function App() {
     <BrowserRouter>
       <div className="app-viewport min-h-dvh bg-[#F0F4FF]">
         <div dir="rtl" className="relative h-[100dvh] w-full overflow-hidden bg-[#F0F4FF]">
-          <div className="app-route-content h-full w-full lg:pl-24">
+          <div className={`app-route-content h-full w-full ${isAuthenticated ? 'lg:pl-24' : ''}`}>
           <Routes>
             <Route path="/" element={isAuthenticated ? <Navigate to="/home" replace /> : <PublicLandingScreen />} />
             <Route path="/demo/:lessonId" element={<SampleLessonScreen />} />

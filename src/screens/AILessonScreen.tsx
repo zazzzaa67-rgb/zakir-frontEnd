@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
-import { getLessonById, LessonDetails, checkAndIncrementAiLimit } from '../lib/api';
+import { getAccessToken, getLessonById, LessonDetails, checkAndIncrementAiLimit } from '../lib/api';
 
 const modes = [
   { icon: '📄', label: 'ملف الدرس PDF', screen: 'pdf' as const },
@@ -88,6 +88,16 @@ export default function AILessonScreen() {
   const handleSend = async (textToSend?: string) => {
     const message = (textToSend || userInput).trim();
     if (!message || chatLoading) return;
+    if (!getAccessToken()) {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', text: message },
+        { role: 'model', text: 'لازم تسجل دخول الأول يا صديقي 👋 سجل دخولك عشان تقدر تبعتلي رسائل.' },
+      ]);
+      setUserInput('');
+      setChatError('');
+      return;
+    }
     if (!lessonId) {
       setChatError('يرجى فتح الدرس من قائمة الدروس أولاً');
       return;
