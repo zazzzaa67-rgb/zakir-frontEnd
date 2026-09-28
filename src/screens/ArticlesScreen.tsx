@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import Footer from '../components/Footer';
 
 const articles = [
@@ -116,13 +116,17 @@ const articles = [
 
 export default function ArticlesScreen() {
   const { articleId } = useParams();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo === '/' || location.state?.returnTo === '/home'
+    ? location.state.returnTo
+    : '/';
   const article = articles.find((item) => item.id === articleId);
 
   return (
     <div dir="rtl" className="flex h-full w-full flex-col bg-[#F0F4FF] text-right">
       <main className="flex-1 overflow-y-auto pb-24">
         <header className="bg-gradient-to-l from-blue-700 to-indigo-700 px-5 pb-7 pt-12 text-white">
-          <Link to="/home" className="mb-5 inline-block text-sm font-bold text-white/80 hover:text-white">
+          <Link to={returnTo} className="mb-5 inline-block text-sm font-bold text-white/80 hover:text-white">
             العودة للرئيسية ←
           </Link>
           <h1 className="text-2xl font-black">مقالات تساعدك على المذاكرة</h1>
@@ -168,7 +172,7 @@ export default function ArticlesScreen() {
                 <div className="p-5">
                   <h2 className="text-lg font-black leading-7 text-slate-900">{item.title}</h2>
                   <p className="mt-2 text-sm leading-7 text-slate-600">{item.description}</p>
-                  <Link to={`/articles/${item.id}`} className="mt-4 inline-block font-bold text-blue-700 hover:text-blue-900">
+            <Link to={`/articles/${item.id}`} state={{ returnTo }} className="mt-4 inline-block font-bold text-blue-700 hover:text-blue-900">
                     اقرأ المقال ←
                   </Link>
                 </div>

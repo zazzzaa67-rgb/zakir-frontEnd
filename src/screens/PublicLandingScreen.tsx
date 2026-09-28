@@ -9,7 +9,7 @@ export default function PublicLandingScreen() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-8">
           <Link to="/" className="text-xl font-black text-blue-800">فهمتها</Link>
           <nav aria-label="القائمة الرئيسية" className="flex items-center gap-2 sm:gap-3">
-            <Link to="/articles" className="hidden rounded-xl px-3 py-2 text-sm font-bold text-slate-600 hover:bg-blue-50 sm:inline-block">المقالات</Link>
+            <Link to="/articles" state={{ returnTo: '/' }} className="hidden rounded-xl px-3 py-2 text-sm font-bold text-slate-600 hover:bg-blue-50 sm:inline-block">المقالات</Link>
             <Link to="/auth?mode=signin" className="rounded-xl px-3 py-2 text-sm font-bold text-blue-700 hover:bg-blue-50">تسجيل الدخول</Link>
             <Link to="/auth?mode=signup" className="rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-black text-white shadow-sm hover:bg-blue-800">إنشاء حساب</Link>
           </nav>
@@ -17,16 +17,38 @@ export default function PublicLandingScreen() {
       </header>
 
       <main>
-        <section className="bg-gradient-to-bl from-blue-950 via-blue-800 to-indigo-700 px-4 py-14 text-white sm:py-20">
-          <div className="mx-auto max-w-5xl">
-            <p className="font-bold text-blue-200">منصة فهمتها التعليمية</p>
-            <h1 className="mt-3 max-w-3xl text-3xl font-black leading-tight sm:text-5xl">افهم الدرس، راجع ملخصه، واختبر نفسك</h1>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-blue-100 sm:text-lg">
-              استكشف نماذج دروس تعليمية ومقالات تساعدك على المذاكرة. تقدر تبدأ كزائر، وإنشاء الحساب يساعدك على حفظ تقدمك ونتائجك.
-            </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <a href="#sample-lessons" className="rounded-xl bg-white px-5 py-3 font-black text-blue-800 hover:bg-blue-50">استكشف الدروس</a>
-              <Link to="/articles" className="rounded-xl border border-white/40 px-5 py-3 font-bold text-white hover:bg-white/10">اقرأ المقالات</Link>
+        <section className="landing-hero relative isolate overflow-hidden bg-gradient-to-bl from-[#071A3D] via-[#123C78] to-[#3155A4] px-4 py-12 text-white sm:py-16 lg:py-20">
+          <div className="pointer-events-none absolute -left-24 -top-24 -z-10 h-80 w-80 rounded-full bg-sky-300/15 blur-3xl" />
+          <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
+            <div className="landing-copy">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-blue-100 backdrop-blur-sm">
+                <span className="h-2 w-2 rounded-full bg-emerald-300" /> منصة فهمتها التعليمية
+              </span>
+              <h1 className="mt-5 max-w-2xl text-3xl font-black leading-[1.45] sm:text-5xl sm:leading-[1.35]">افهم الدرس، راجع ملخصه، واختبر نفسك</h1>
+              <p className="mt-5 max-w-xl text-base leading-8 text-blue-100 sm:text-lg">
+                خلي مذاكرتك أوضح وأسهل. استكشف دروسًا تعليمية ومقالات عملية، وابدأ كزائر من غير ما تحتاج إلى تسجيل.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <a href="#sample-lessons" className="rounded-xl bg-white px-5 py-3 font-black text-blue-900 shadow-lg shadow-blue-950/20 transition hover:-translate-y-0.5 hover:bg-blue-50">استكشف الدروس</a>
+                <Link to="/articles" state={{ returnTo: '/' }} className="rounded-xl border border-white/30 bg-white/5 px-5 py-3 font-bold text-white transition hover:bg-white/15">اقرأ المقالات</Link>
+              </div>
+              <div className="mt-9 flex flex-wrap gap-x-6 gap-y-3 text-sm font-semibold text-blue-100/90">
+                <span>✓ تعلّم على خطوتك</span><span>✓ جرّب الدروس مجانًا</span><span>✓ تابع تقدمك</span>
+              </div>
+            </div>
+
+            <div className="landing-visual relative mx-auto w-full max-w-xl lg:max-w-none">
+              <div className="absolute -inset-3 rounded-[2rem] bg-gradient-to-br from-sky-300/30 to-indigo-300/10 blur-xl" />
+              <div className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-white/10 p-2 shadow-2xl shadow-blue-950/40 backdrop-blur-sm">
+                <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=85" alt="طالب يذاكر ويكتب ملاحظاته" fetchPriority="high" className="h-64 w-full rounded-[1.5rem] object-cover sm:h-80 lg:h-[25rem]" />
+                <div className="absolute inset-x-5 bottom-5 flex items-center justify-between gap-3 rounded-2xl border border-white/50 bg-white/90 p-4 text-slate-800 shadow-lg backdrop-blur-md sm:inset-x-7 sm:bottom-7">
+                  <div><p className="text-xs font-bold text-blue-700">خطوة صغيرة كل يوم</p><p className="mt-1 font-black">تعلّم، راجع، وتقدّم</p></div>
+                  <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-700 text-xl text-white">✦</span>
+                </div>
+              </div>
+              <div className="landing-float absolute -right-2 top-7 rounded-2xl border border-white/50 bg-white px-4 py-3 text-slate-800 shadow-xl sm:-right-5 sm:top-10">
+                <p className="text-xs font-bold text-slate-500">جاهز تبدأ؟</p><p className="font-black text-blue-800">درس تجريبي مجاني</p>
+              </div>
             </div>
           </div>
         </section>
@@ -59,7 +81,7 @@ export default function PublicLandingScreen() {
               <h2 className="text-2xl font-black text-slate-900">تحب تقرأ عن طرق المذاكرة؟</h2>
               <p className="mt-2 text-sm leading-7 text-slate-600">تصفح مقالات عن تنظيم المذاكرة والتحفيز والقراءة والتركيز.</p>
             </div>
-            <Link to="/articles" className="rounded-xl border border-blue-200 px-5 py-3 font-black text-blue-800 hover:bg-blue-50">كل المقالات ←</Link>
+              <Link to="/articles" state={{ returnTo: '/' }} className="rounded-xl border border-blue-200 px-5 py-3 font-black text-blue-800 hover:bg-blue-50">كل المقالات ←</Link>
           </div>
         </section>
 

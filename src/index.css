@@ -11,6 +11,24 @@ body {
   font-family: 'Cairo', sans-serif;
 }
 
+@keyframes landing-enter {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes landing-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+
+.landing-copy { animation: landing-enter 650ms ease-out both; }
+.landing-visual { animation: landing-enter 800ms 100ms ease-out both; }
+.landing-float { animation: landing-float 4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-copy, .landing-visual, .landing-float { animation: none; }
+}
+
 .app-route-content {
   box-sizing: border-box;
 }
