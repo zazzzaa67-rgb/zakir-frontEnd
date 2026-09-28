@@ -1,8 +1,21 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
-import { sampleLessons } from '../data/sampleLessons';
+import { getCachedPublicSampleLessons, getPublicSampleLessons, PublicSampleLesson } from '../lib/api';
 
 export default function PublicLandingScreen() {
+  const [lessons, setLessons] = useState<PublicSampleLesson[]>(getCachedPublicSampleLessons);
+  const [lessonsLoading, setLessonsLoading] = useState(lessons.length === 0);
+
+  useEffect(() => {
+    let active = true;
+    getPublicSampleLessons()
+      .then((result) => { if (active) setLessons(result); })
+      .catch(() => { if (active) setLessons([]); })
+      .finally(() => { if (active) setLessonsLoading(false); });
+    return () => { active = false; };
+  }, []);
+
   return (
     <div dir="rtl" className="h-full overflow-y-auto bg-[#F5F8FF] text-right text-slate-800">
       <header className="border-b border-blue-100 bg-white">
@@ -47,7 +60,7 @@ export default function PublicLandingScreen() {
                 </div>
               </div>
               <div className="landing-float absolute -right-2 top-7 rounded-2xl border border-white/50 bg-white px-4 py-3 text-slate-800 shadow-xl sm:-right-5 sm:top-10">
-                <p className="text-xs font-bold text-slate-500">جاهز تبدأ؟</p><p className="font-black text-blue-800">درس تجريبي مجاني</p>
+                <p className="text-xs font-bold text-slate-500">جاهز تبدأ؟</p><p className="font-black text-blue-800">يلا بينا يا صديقي</p>
               </div>
             </div>
           </div>
@@ -63,13 +76,15 @@ export default function PublicLandingScreen() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            {sampleLessons.map((lesson, index) => (
-              <article key={lesson.id} className="flex flex-col rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-lg font-black text-blue-800">{index + 1}</span>
-                <p className="mt-4 text-xs font-black text-blue-700">{lesson.stage} · {lesson.subject}</p>
-                <h3 className="mt-2 text-xl font-black leading-8 text-slate-900">{lesson.title}</h3>
-                <p className="mt-2 flex-1 text-sm leading-7 text-slate-600">{lesson.introduction}</p>
-                <Link to={`/demo/${lesson.id}`} className="mt-5 inline-flex items-center justify-center rounded-xl bg-blue-700 px-4 py-3 font-black text-white hover:bg-blue-800">افتح الدرس ←</Link>
+            {lessonsLoading && lessons.length === 0 && <p className="col-span-full rounded-2xl bg-white p-6 text-center font-bold text-slate-500">جاري تحميل الدروس...</p>}
+            {!lessonsLoading && lessons.length === 0 && <p className="col-span-full rounded-2xl bg-white p-6 text-center font-bold text-slate-500">الدروس غير متاحة حاليًا. حاول مرة أخرى لاحقًا.</p>}
+            {lessons.map((lesson) => (
+              <article key={lesson.id} className="flex flex-col rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg sm:p-6">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-lg font-black text-blue-800">{lesson.grade_level}</span>
+                <p className="mt-4 text-xs font-black text-blue-700">الصف {lesson.grade_level} الثانوي · {lesson.subject_title}</p>
+                <h3 className="mt-2 text-xl font-black leading-8 text-slate-900">{lesson.lesson_title}</h3>
+                <p className="mt-2 flex-1 text-sm leading-7 text-slate-600">{lesson.unit_title || lesson.book_title}</p>
+                <Link to={`/ai-lesson/${lesson.id}`} state={{ publicDemo: true }} className="mt-5 inline-flex items-center justify-center rounded-xl bg-blue-700 px-4 py-3 font-black text-white hover:bg-blue-800">افتح الدرس ←</Link>
               </article>
             ))}
           </div>

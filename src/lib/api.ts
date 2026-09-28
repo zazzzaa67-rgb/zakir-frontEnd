@@ -1,5 +1,3 @@
-import { useEffect, useState } from 'react';
-
 const configuredApiUrl = import.meta.env.VITE_API_URL || 'https://zakir-backend.vercel.app/api';
 const normalizedApiUrl = configuredApiUrl.replace(/\/$/, '').replace(/\/(?:api\/)+api$/i, '/api');
 const API_URL = normalizedApiUrl.endsWith('/api')
@@ -69,6 +67,46 @@ export type LessonDetails = ApiLesson & {
   };
   books?: { id: string; title: string; source_url?: string | null; status: string };
 };
+
+export type PublicSampleLesson = LessonDetails & {
+  grade_level: 1 | 2 | 3;
+  subject_title: string;
+  book_title: string;
+};
+
+const PUBLIC_SAMPLE_CACHE_KEY = 'zakker_public_sample_lessons_v1';
+const PUBLIC_SAMPLE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+let publicSampleRequest: Promise<PublicSampleLesson[]> | null = null;
+
+function readPublicSampleCache() {
+  try {
+    return JSON.parse(localStorage.getItem(PUBLIC_SAMPLE_CACHE_KEY) || 'null') as { savedAt: number; lessons: PublicSampleLesson[] } | null;
+  } catch {
+    return null;
+  }
+}
+
+export function getCachedPublicSampleLessons() {
+  return readPublicSampleCache()?.lessons ?? [];
+}
+
+export function getPublicSampleLessons(): Promise<PublicSampleLesson[]> {
+  const cached = readPublicSampleCache();
+  if (cached && Date.now() - cached.savedAt < PUBLIC_SAMPLE_CACHE_TTL_MS) return Promise.resolve(cached.lessons);
+  if (publicSampleRequest) return publicSampleRequest;
+  publicSampleRequest = request<PublicSampleLesson[]>('/lessons/public-samples')
+    .then((lessons) => {
+      if (!Array.isArray(lessons)) throw new Error('Invalid public lessons response');
+      try { localStorage.setItem(PUBLIC_SAMPLE_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), lessons })); } catch { /* Storage may be disabled or full. */ }
+      return lessons;
+    })
+    .catch((error) => {
+      if (cached?.lessons.length) return cached.lessons;
+      throw error;
+    })
+    .finally(() => { publicSampleRequest = null; });
+  return publicSampleRequest;
+}
 
 export function getAccessToken() {
   const expiresAt = Number(localStorage.getItem(SESSION_EXPIRES_AT_KEY));
@@ -271,6 +309,8 @@ export async function getLessonsBySubject(subjectId: string, trackId?: string): 
 }
 
 export async function getLessonById(lessonId: string): Promise<LessonDetails> {
+  const publicSample = getCachedPublicSampleLessons().find((lesson) => lesson.id === lessonId);
+  if (publicSample) return publicSample;
   try {
     const serverLesson = await request<LessonDetails>(`/lessons/${encodeURIComponent(lessonId)}`);
     return serverLesson;

@@ -28,12 +28,14 @@ export default function SampleLessonScreen() {
     );
   }
 
+  const quiz = lesson.quiz;
+
   function submitQuiz() {
-    if (answers.length !== lesson.quiz.length) return;
+    if (answers.length !== quiz.length) return;
     setSubmitted(true);
   }
 
-  const score = lesson.quiz.reduce((total, question, index) => total + (answers[index] === question.answer ? 1 : 0), 0);
+  const score = quiz.reduce((total, question, index) => total + (answers[index] === question.answer ? 1 : 0), 0);
   const answeredCount = answers.filter((answer) => typeof answer === 'number').length;
 
   return (
