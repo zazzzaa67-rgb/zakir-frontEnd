@@ -92,13 +92,16 @@ export function getCachedPublicSampleLessons() {
 
 export function getPublicSampleLessons(): Promise<PublicSampleLesson[]> {
   const cached = readPublicSampleCache();
-  if (cached && Date.now() - cached.savedAt < PUBLIC_SAMPLE_CACHE_TTL_MS) return Promise.resolve(cached.lessons);
+  if (cached?.lessons.length && Date.now() - cached.savedAt < PUBLIC_SAMPLE_CACHE_TTL_MS) return Promise.resolve(cached.lessons);
   if (publicSampleRequest) return publicSampleRequest;
   publicSampleRequest = request<PublicSampleLesson[]>('/lessons/public-samples')
     .then((lessons) => {
       if (!Array.isArray(lessons)) throw new Error('Invalid public lessons response');
-      try { localStorage.setItem(PUBLIC_SAMPLE_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), lessons })); } catch { /* Storage may be disabled or full. */ }
-      return lessons;
+      if (lessons.length > 0) {
+        try { localStorage.setItem(PUBLIC_SAMPLE_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), lessons })); } catch { /* Storage may be disabled or full. */ }
+        return lessons;
+      }
+      return cached?.lessons.length ? cached.lessons : [];
     })
     .catch((error) => {
       if (cached?.lessons.length) return cached.lessons;
