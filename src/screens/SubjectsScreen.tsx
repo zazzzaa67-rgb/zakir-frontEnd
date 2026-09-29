@@ -45,7 +45,7 @@ export default function SubjectsScreen() {
         return;
       }
 
-      const data = await getSubjectsByTrack(profile.track_id);
+      const data = await getSubjectsByTrack(profile.track_id, isManual);
 
       if (isMounted.current && Array.isArray(data)) {
         setSubjects(data);

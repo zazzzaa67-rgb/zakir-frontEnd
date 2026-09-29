@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ApiLesson, getLessonsBySubject, getStoredProfile } from '../lib/api';
+import { ApiLesson, getCachedLessons, getLessonsBySubject, getStoredProfile } from '../lib/api';
 
 type LessonStatus = 'completed' | 'in_progress' | 'available' | 'locked';
 
@@ -51,8 +51,10 @@ export default function LessonListScreen() {
   const icon = stateData.icon || '📚';
 
   const profile = getStoredProfile();
-  const [lessons, setLessons] = useState<ApiLesson[]>([]);
-  const [loading, setLoading] = useState(Boolean(subjectId && subjectId !== 'undefined'));
+  const [lessons, setLessons] = useState<ApiLesson[]>(() =>
+    subjectId && subjectId !== 'undefined' ? getCachedLessons(subjectId, profile?.track_id) : []
+  );
+  const [loading, setLoading] = useState(Boolean(subjectId && subjectId !== 'undefined' && getCachedLessons(subjectId, profile?.track_id).length === 0));
   const [error, setError] = useState('');
 
   useEffect(() => {

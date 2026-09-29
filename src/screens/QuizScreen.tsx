@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LessonQuestion, submitExamResult, getStoredProfile } from '../lib/api';
-import { updateLocalPointsAndCoins, setCachedProfile } from '../lib/profileManager';
+import { setCachedProfile } from '../lib/profileManager';
 import { recordMistake } from '../lib/mistakeStore';
 
 const fallbackQuestions = [
@@ -50,6 +50,9 @@ export default function QuizScreen() {
   const [answered, setAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState('');
+  const [serverResult, setServerResult] = useState<Awaited<ReturnType<typeof submitExamResult>> | null>(null);
 
   const q = questions[current];
   const isCorrect = selected === q.correct;
@@ -71,43 +74,39 @@ export default function QuizScreen() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (current < questions.length - 1) {
       setCurrent(current + 1);
       setSelected(null);
       setAnswered(false);
-    } else {
+      return;
+    }
+
+    const profile = getStoredProfile();
+    if (!profile) {
+      setSubmissionError('Please sign in to save your exam result.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmissionError('');
+    try {
+      const result = await submitExamResult(score, questions.length);
+      setServerResult(result);
+      setCachedProfile(result.profile);
       setShowResults(true);
-
-      // 1. حساب النقاط والـ Coins بناءً على القواعد
-      const earnedPoints = 10;
-      const isPerfectScore = score === questions.length;
-      const earnedCoins = isPerfectScore ? 5 : 3;
-
-      // 2. تحديث التخزين المحلي فوراً
-      updateLocalPointsAndCoins(earnedPoints, earnedCoins);
-
-      // 3. إرسال النتيجة الحقيقية للسيرفر
-      const profile = getStoredProfile();
-      if (profile) {
-        submitExamResult(profile.id, isPerfectScore)
-          .then((res) => {
-            if (res.profile) {
-              setCachedProfile(res.profile);
-            }
-            console.log('✅ تم تحديث النقاط بنجاح:', res);
-          })
-          .catch((err) => {
-            console.error('❌ خطأ أثناء تحديث النتيجة:', err);
-          });
-      }
+    } catch (err) {
+      console.error('Failed to submit exam result:', err);
+      setSubmissionError(err instanceof Error ? err.message : 'Could not save the result. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   if (showResults) {
-    const percentage = Math.round((score / questions.length) * 100);
-    const isPerfect = score === questions.length;
-    const earnedCoins = isPerfect ? 5 : 3;
+    if (!serverResult) return null;
+    const { examResult, earned, profile } = serverResult;
+    const percentage = examResult.percentage;
 
     return (
       <div className="w-full h-full flex flex-col bg-[#F0F4FF]">
@@ -131,7 +130,7 @@ export default function QuizScreen() {
               }}
             >
               <div className="text-4xl font-black text-white">
-                {score}/{questions.length}
+                {examResult.score}/{examResult.totalQuestions}
               </div>
               <div className="text-white/80 text-sm font-semibold">{percentage}%</div>
             </div>
@@ -144,10 +143,11 @@ export default function QuizScreen() {
                 WebkitTextFillColor: 'transparent',
               }}
             >
-              <span>+10 Points 🏆</span>
+              <span>+{earned.points} Points</span>
               <span>•</span>
-              <span>+{earnedCoins} Coins 🪙</span>
+              <span>+{earned.coins} Coins</span>
             </div>
+            <p className="text-sm font-bold text-slate-500">Current balance: {profile.points} points / {profile.coins} coins</p>
             <p className="text-slate-600 font-medium">
               {percentage >= 80 ? 'ممتاز! أداؤك رائع 🌟' : 'كويس! ممكن تتحسن أكتر 💪'}
             </p>
@@ -266,16 +266,20 @@ export default function QuizScreen() {
         )}
 
         {answered && (
+          <>
+          {submissionError && <p className="mb-3 rounded-xl bg-red-50 p-3 text-center text-sm font-bold text-red-700">{submissionError}</p>}
           <button
             onClick={handleNext}
-            className="w-full py-4 rounded-2xl text-white font-bold text-lg cursor-pointer"
+            disabled={isSubmitting}
+            className="w-full py-4 rounded-2xl text-white font-bold text-lg cursor-pointer disabled:opacity-60"
             style={{
               background: 'linear-gradient(135deg, #1E6FF0, #7C3AED)',
               boxShadow: '0 8px 24px rgba(30,111,240,0.4)',
             }}
           >
-            {current < questions.length - 1 ? 'السؤال التالي →' : 'شوف النتيجة 🎯'}
+            {isSubmitting ? 'Saving result...' : current < questions.length - 1 ? 'Next question' : submissionError ? 'Retry saving result' : 'See result'}
           </button>
+          </>
         )}
       </div>
     </div>

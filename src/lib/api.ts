@@ -220,32 +220,49 @@ export async function signUp(payload: { email: string; password: string; display
 }
 
 // دالة لجلب الكاش المحلي للمواد
-export function getCachedSubjects(trackId?: string): Subject[] {
+const CURRICULUM_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+function readCurriculumCache<T>(key: string): { data: T[]; savedAt: number } {
   try {
-    if (!trackId) return [];
-    return JSON.parse(localStorage.getItem(`zakker_cached_subjects_${encodeURIComponent(trackId)}`) || '[]') as Subject[];
+    const value = JSON.parse(localStorage.getItem(key) || 'null');
+    if (Array.isArray(value)) return { data: value as T[], savedAt: 0 };
+    if (value && Array.isArray(value.data) && typeof value.savedAt === 'number') return value;
   } catch {
-    return [];
+    // Ignore invalid or unavailable local storage data.
   }
+  return { data: [], savedAt: 0 };
 }
 
-// دالة لحفظ المواد في الكاش المحلي
-export function setCachedSubjects(trackId: string, subjects: Subject[]) {
+function writeCurriculumCache<T>(key: string, data: T[]) {
   try {
-    if (Array.isArray(subjects)) {
-      localStorage.setItem(`zakker_cached_subjects_${encodeURIComponent(trackId)}`, JSON.stringify(subjects));
-    }
+    localStorage.setItem(key, JSON.stringify({ data, savedAt: Date.now() }));
   } catch (e) {
-    console.error('Failed to cache subjects', e);
+    console.error('Failed to cache curriculum data', e);
   }
 }
 
-// دالة جلب المواد من السيرفر مع دمج الكاش لتفادي الـ 404
-export async function getSubjectsByTrack(trackId: string): Promise<Subject[]> {
+function curriculumCacheIsFresh(savedAt: number) {
+  return savedAt > 0 && Date.now() - savedAt < CURRICULUM_CACHE_TTL_MS;
+}
+
+export function getCachedSubjects(trackId?: string): Subject[] {
+  if (!trackId) return [];
+  return readCurriculumCache<Subject>(`zakker_cached_subjects_${encodeURIComponent(trackId)}`).data;
+}
+
+export function setCachedSubjects(trackId: string, subjects: Subject[]) {
+  if (Array.isArray(subjects)) writeCurriculumCache(`zakker_cached_subjects_${encodeURIComponent(trackId)}`, subjects);
+}
+
+export async function getSubjectsByTrack(trackId: string, forceRefresh = false): Promise<Subject[]> {
   if (!trackId || trackId === 'undefined' || trackId === 'null') {
     console.error('❌ track_id غير صحيح أو غير موجود:', trackId);
     return [];
   }
+
+  const cacheKey = `zakker_cached_subjects_${encodeURIComponent(trackId)}`;
+  const cached = readCurriculumCache<Subject>(cacheKey);
+  if (!forceRefresh && cached.data.length > 0 && curriculumCacheIsFresh(cached.savedAt)) return cached.data;
 
   try {
     const result = await request<Subject[]>(`/subjects?track_id=${encodeURIComponent(trackId)}`);
@@ -256,40 +273,33 @@ export async function getSubjectsByTrack(trackId: string): Promise<Subject[]> {
     return [];
   } catch (error) {
     console.error('❌ خطأ أثناء جلب المواد، يتم استخدام الكاش المحلي:', error);
-    if ((error as any)?.status) throw error;
-    const cached = getCachedSubjects(trackId);
-    if (cached.length > 0) return cached;
+    if (cached.data.length > 0) return cached.data;
     throw error;
   }
 }
 
 function lessonsCacheKey(subjectId: string, trackId?: string) {
-  return `zakker_cached_lessons_${encodeURIComponent(trackId || 'shared')}_${encodeURIComponent(subjectId)}`;
+  const studentId = getStoredProfile()?.id || 'anonymous';
+  return `zakker_cached_lessons_${encodeURIComponent(studentId)}_${encodeURIComponent(trackId || 'shared')}_${encodeURIComponent(subjectId)}`;
 }
 
 export function getCachedLessons(subjectId: string, trackId?: string): ApiLesson[] {
-  try {
-    return JSON.parse(localStorage.getItem(lessonsCacheKey(subjectId, trackId)) || '[]') as ApiLesson[];
-  } catch {
-    return [];
-  }
+  return readCurriculumCache<ApiLesson>(lessonsCacheKey(subjectId, trackId)).data;
 }
 
 export function setCachedLessons(subjectId: string, lessons: ApiLesson[], trackId?: string) {
-  try {
-    if (Array.isArray(lessons)) {
-      localStorage.setItem(lessonsCacheKey(subjectId, trackId), JSON.stringify(lessons));
-    }
-  } catch (e) {
-    console.error('Failed to cache lessons', e);
-  }
+  if (Array.isArray(lessons)) writeCurriculumCache(lessonsCacheKey(subjectId, trackId), lessons);
 }
 
-export async function getLessonsBySubject(subjectId: string, trackId?: string): Promise<ApiLesson[]> {
+export async function getLessonsBySubject(subjectId: string, trackId?: string, forceRefresh = false): Promise<ApiLesson[]> {
   if (!subjectId) {
     console.error('❌ subject_id غير موجود');
     return [];
   }
+
+  const cacheKey = lessonsCacheKey(subjectId, trackId);
+  const cached = readCurriculumCache<ApiLesson>(cacheKey);
+  if (!forceRefresh && cached.data.length > 0 && curriculumCacheIsFresh(cached.savedAt)) return cached.data;
 
   try {
     const query = new URLSearchParams({ subject_id: subjectId });
@@ -304,9 +314,7 @@ export async function getLessonsBySubject(subjectId: string, trackId?: string): 
     return [];
   } catch (error) {
     console.error('❌ خطأ في جلب الدروس، يتم الاعتماد على الكاش المحلي:', error);
-    if ((error as any)?.status) throw error;
-    const cached = getCachedLessons(subjectId, trackId);
-    if (cached.length > 0) return cached;
+    if (cached.data.length > 0) return cached.data;
     throw error;
   }
 }
@@ -314,16 +322,20 @@ export async function getLessonsBySubject(subjectId: string, trackId?: string): 
 export async function getLessonById(lessonId: string): Promise<LessonDetails> {
   const publicSample = getCachedPublicSampleLessons().find((lesson) => lesson.id === lessonId);
   if (publicSample) return publicSample;
+  const detailCacheKey = `zakker_cached_lesson_detail_${encodeURIComponent(lessonId)}`;
+  const cachedDetail = readCurriculumCache<LessonDetails>(detailCacheKey);
+  if (cachedDetail.data[0] && curriculumCacheIsFresh(cachedDetail.savedAt)) return cachedDetail.data[0];
   try {
     const serverLesson = await request<LessonDetails>(`/lessons/${encodeURIComponent(lessonId)}`);
+    writeCurriculumCache(detailCacheKey, [serverLesson]);
     return serverLesson;
   } catch (error) {
-    if ((error as any)?.status) throw error;
+    if (cachedDetail.data[0]) return cachedDetail.data[0];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith('zakker_cached_lessons_')) {
         try {
-          const cachedLessons = JSON.parse(localStorage.getItem(key) || '[]') as any[];
+          const cachedLessons = readCurriculumCache<any>(key).data;
           const found = cachedLessons.find((l) => l.id === lessonId || l.lesson_title === lessonId);
           
           if (found) {
@@ -367,12 +379,17 @@ export async function getStudentProfile(userId?: string) {
 }
 
 // 2. تحديث نتيجة الامتحان (تطابق مع الـ Backend route: /student/exam-result)
-export async function submitExamResult(userId: string, isPerfectScore: boolean) {
-  return request<{ message: string; earned: { points: number; coins: number }; profile: StudentProfile }>(
+export async function submitExamResult(score: number, totalQuestions: number) {
+  return request<{
+    message: string;
+    examResult: { score: number; totalQuestions: number; percentage: number };
+    earned: { points: number; coins: number };
+    profile: StudentProfile;
+  }>(
     '/student/exam-result',
     {
       method: 'POST',
-      body: JSON.stringify({ userId, isPerfectScore }),
+      body: JSON.stringify({ score, totalQuestions }),
     }
   );
 }
