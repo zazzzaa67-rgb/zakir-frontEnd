@@ -111,7 +111,7 @@ export default function TeamScreen() {
               <div>
                 <h2 className="text-lg font-black text-slate-900">اعمل فرقتك</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">
-                  محتاج 300 Points و20 Coins، والفرقة لحد 6 طلاب من نفس النوع.
+                  300 Points required; creating a team costs 20 Coins. Teams can have up to 6 students of the same gender.
                 </p>
               </div>
               <span className="text-3xl">🚀</span>
@@ -185,6 +185,7 @@ export default function TeamScreen() {
               </div>
             </section>
 
+            {team.isOwner && (
             <section className="mb-5 rounded-3xl bg-white p-5 shadow-sm">
               <h2 className="mb-1 text-lg font-black text-slate-900">ادعُ طالبًا</h2>
               <p className="mb-3 text-xs text-slate-500">
@@ -223,6 +224,7 @@ export default function TeamScreen() {
                 </div>
               ))}
             </section>
+            )}
           </>
         )}
 
