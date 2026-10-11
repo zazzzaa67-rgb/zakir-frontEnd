@@ -60,8 +60,9 @@ export default function AboutUs() {
               <img
                 src={ahmedPhoto}
                 alt="Ahmed Mohamed، مؤسس Forixa"
-                className="h-72 w-full object-cover object-[center_35%] sm:h-full sm:min-h-72"
-                loading="lazy"
+                className="h-72 w-full object-cover object-[center_32%] sm:h-full sm:min-h-72"
+                loading="eager"
+                decoding="async"
               />
               <div className="p-6 sm:p-8">
                 <p className="text-sm font-black text-blue-700">الجهة المؤسسة للمنصة</p>
