@@ -40,14 +40,7 @@ export default function SampleLessonScreen() {
 
   return (
     <div dir="rtl" className="h-full overflow-y-auto bg-[#F5F8FF] text-right text-slate-800">
-      <header className="border-b border-blue-100 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-8">
-          <Link to="/" className="font-black text-blue-800">فهمتها</Link>
-          <Link to="/auth?mode=signin" className="rounded-xl border border-blue-200 px-4 py-2 text-sm font-bold text-blue-800 hover:bg-blue-50">تسجيل الدخول</Link>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-10">
+<main className="mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-10">
         <Link to="/" className="text-sm font-bold text-blue-700 hover:text-blue-900">← كل الدروس النموذجية</Link>
         <div className="mt-4 rounded-3xl bg-gradient-to-bl from-blue-950 to-blue-700 p-6 text-white sm:p-8">
           <p className="text-sm font-bold text-blue-200">{lesson.stage} · {lesson.subject}</p>

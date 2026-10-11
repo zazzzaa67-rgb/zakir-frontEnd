@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
 import PublicLandingScreen from './screens/PublicLandingScreen';
+import LandingLessonDetailScreen from './screens/LandingLessonDetailScreen';
 import SampleLessonScreen from './screens/SampleLessonScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
@@ -50,6 +51,7 @@ export default function App() {
           <div className={`app-route-content h-full w-full ${isAuthenticated ? 'lg:pl-24' : ''}`}>
           <Routes>
             <Route path="/" element={isAuthenticated ? <Navigate to="/home" replace /> : <PublicLandingScreen />} />
+            <Route path="/landing-lesson/:lessonId" element={<LandingLessonDetailScreen />} />
             <Route path="/demo/:lessonId" element={<SampleLessonScreen />} />
             <Route path="/onboarding" element={<OnboardingScreen />} />
             <Route path="/auth" element={<AuthScreen />} />

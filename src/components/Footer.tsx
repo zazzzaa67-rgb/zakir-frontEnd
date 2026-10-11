@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 
 const whatsappChannel = 'https://whatsapp.com/channel/0029VbDxLamLNSZxv8RK0S46';
+const founderLinkedIn = 'https://www.linkedin.com/in/ahmed-mohamed-b657163a6/';
 
 export default function Footer() {
   return (
@@ -12,6 +13,14 @@ export default function Footer() {
         <Link to="/privacy-policy" className="font-semibold transition-colors hover:text-blue-700">
           سياسة الخصوصية
         </Link>
+        <a
+          href={founderLinkedIn}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold transition-colors hover:text-blue-700"
+        >
+          تواصل مع المؤسس على LinkedIn
+        </a>
         <a
           href={whatsappChannel}
           target="_blank"

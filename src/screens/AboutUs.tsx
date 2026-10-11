@@ -1,5 +1,6 @@
 import BottomNav from '../components/BottomNav';
 import Footer from '../components/Footer';
+import ahmedPhoto from '../assets/ahmed-mohamed.jpg';
 
 const values = [
   {
@@ -50,6 +51,45 @@ export default function AboutUs() {
                 <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-3xl px-4 pb-8 sm:px-8">
+          <div className="overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-sm">
+            <div className="grid sm:grid-cols-[220px_1fr]">
+              <img
+                src={ahmedPhoto}
+                alt="Ahmed Mohamed، مؤسس Forixa"
+                className="h-72 w-full object-cover object-[center_35%] sm:h-full sm:min-h-72"
+                loading="lazy"
+              />
+              <div className="p-6 sm:p-8">
+                <p className="text-sm font-black text-blue-700">الجهة المؤسسة للمنصة</p>
+                <h2 className="mt-2 text-2xl font-black text-slate-900">Forixa</h2>
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  Forixa هي الجهة المؤسسة لمنصة فهمتها. أسسها Ahmed Mohamed، ويعمل على تطوير تجارب رقمية تساعد الطلاب على التعلّم.
+                </p>
+                <p className="mt-5 font-black text-slate-900">Ahmed Mohamed</p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <a
+                    href="https://www.linkedin.com/in/ahmed-mohamed-b657163a6/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-xl bg-[#0A66C2] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[#004182]"
+                  >
+                    LinkedIn
+                  </a>
+                  <a
+                    href="https://forixa.site"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-xl border border-blue-200 px-4 py-2.5 text-sm font-black text-blue-800 transition hover:bg-blue-50"
+                  >
+                    زيارة Forixa
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
         <Footer />

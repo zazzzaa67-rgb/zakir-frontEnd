@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       tailwindcss(),
+      publisherFilesPlugin(),
       // figmaSiteConfiguration(siteConfiguration),
       figmaErrorOverlayReplay(),
       figmaReactRefreshBoundaryFallback(),
@@ -41,6 +42,34 @@ export default defineConfig(({ mode }) => {
     },
   }
 })
+
+/** Serves the publisher verification files during development and emits them into the production build. */
+function publisherFilesPlugin(): Plugin {
+  const files = new Map([
+    ['/ads.txt', 'google.com, pub-4303656447504578, DIRECT, f08c47fec0942fa0\n'],
+    ['/robots.txt', 'User-agent: *\nAllow: /\n'],
+  ])
+
+  return {
+    name: 'publisher-files',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const pathname = new URL(req.url || '/', 'http://localhost').pathname
+        const content = files.get(pathname)
+        if (content === undefined) return next()
+
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+        res.end(content)
+      })
+    },
+    generateBundle() {
+      for (const [pathname, source] of files) {
+        this.emitFile({ type: 'asset', fileName: pathname.slice(1), source })
+      }
+    },
+  }
+}
 
 type FigmaSiteConfiguration = {
   title?: string

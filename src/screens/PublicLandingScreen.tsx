@@ -1,34 +1,10 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
-import { getCachedPublicSampleLessons, getPublicSampleLessons, PublicSampleLesson } from '../lib/api';
+import { landingLessonDetails as lessons } from '../data/landingLessonData';
 
 export default function PublicLandingScreen() {
-  const [lessons, setLessons] = useState<PublicSampleLesson[]>(getCachedPublicSampleLessons);
-  const [lessonsLoading, setLessonsLoading] = useState(lessons.length === 0);
-
-  useEffect(() => {
-    let active = true;
-    getPublicSampleLessons()
-      .then((result) => { if (active) setLessons(result); })
-      .catch(() => { if (active) setLessons([]); })
-      .finally(() => { if (active) setLessonsLoading(false); });
-    return () => { active = false; };
-  }, []);
-
   return (
     <div dir="rtl" className="h-full overflow-y-auto bg-[#F5F8FF] text-right text-slate-800">
-      <header className="border-b border-blue-100 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-8">
-          <Link to="/" className="text-xl font-black text-blue-800">فهمتها</Link>
-          <nav aria-label="القائمة الرئيسية" className="flex items-center gap-2 sm:gap-3">
-            <Link to="/articles" state={{ returnTo: '/' }} className="hidden rounded-xl px-3 py-2 text-sm font-bold text-slate-600 hover:bg-blue-50 sm:inline-block">المقالات</Link>
-            <Link to="/auth?mode=signin" className="rounded-xl px-3 py-2 text-sm font-bold text-blue-700 hover:bg-blue-50">تسجيل الدخول</Link>
-            <Link to="/auth?mode=signup" className="rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-black text-white shadow-sm hover:bg-blue-800">إنشاء حساب</Link>
-          </nav>
-        </div>
-      </header>
-
       <main>
         <section className="landing-hero relative isolate overflow-hidden bg-gradient-to-bl from-[#071A3D] via-[#123C78] to-[#3155A4] px-4 py-12 text-white sm:py-16 lg:py-20">
           <div className="pointer-events-none absolute -left-24 -top-24 -z-10 h-80 w-80 rounded-full bg-sky-300/15 blur-3xl" />
@@ -43,6 +19,7 @@ export default function PublicLandingScreen() {
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <a href="#sample-lessons" className="rounded-xl bg-white px-5 py-3 font-black text-blue-900 shadow-lg shadow-blue-950/20 transition hover:-translate-y-0.5 hover:bg-blue-50">استكشف الدروس</a>
+                <Link to="/auth?mode=signin" className="rounded-xl border border-white/30 bg-white/5 px-5 py-3 font-bold text-white transition hover:bg-white/15">Sign in</Link>
                 <Link to="/articles" state={{ returnTo: '/' }} className="rounded-xl border border-white/30 bg-white/5 px-5 py-3 font-bold text-white transition hover:bg-white/15">اقرأ المقالات</Link>
               </div>
               <div className="mt-9 flex flex-wrap gap-x-6 gap-y-3 text-sm font-semibold text-blue-100/90">
@@ -76,15 +53,13 @@ export default function PublicLandingScreen() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            {lessonsLoading && lessons.length === 0 && <p className="col-span-full rounded-2xl bg-white p-6 text-center font-bold text-slate-500">جاري تحميل الدروس...</p>}
-            {!lessonsLoading && lessons.length === 0 && <p className="col-span-full rounded-2xl bg-white p-6 text-center font-bold text-slate-500">الدروس غير متاحة حاليًا. حاول مرة أخرى لاحقًا.</p>}
             {lessons.map((lesson) => (
               <article key={lesson.id} className="flex flex-col rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg sm:p-6">
                 <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-lg font-black text-blue-800">{lesson.grade_level}</span>
                 <p className="mt-4 text-xs font-black text-blue-700">الصف {lesson.grade_level} الثانوي · {lesson.subject_title}</p>
                 <h3 className="mt-2 text-xl font-black leading-8 text-slate-900">{lesson.lesson_title}</h3>
                 <p className="mt-2 flex-1 text-sm leading-7 text-slate-600">{lesson.unit_title || lesson.book_title}</p>
-                <Link to={`/ai-lesson/${lesson.id}`} state={{ publicDemo: true }} className="mt-5 inline-flex items-center justify-center rounded-xl bg-blue-700 px-4 py-3 font-black text-white hover:bg-blue-800">افتح الدرس ←</Link>
+                <Link to={`/landing-lesson/${lesson.id}`} className="mt-5 inline-flex items-center justify-center rounded-xl bg-blue-700 px-4 py-3 font-black text-white hover:bg-blue-800">افتح الدرس ←</Link>
               </article>
             ))}
           </div>
